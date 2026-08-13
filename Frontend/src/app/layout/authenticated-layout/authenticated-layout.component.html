@@ -1,0 +1,26 @@
+<div class="layout-shell">
+  <aside class="sidebar">
+    <h1>WorkPulse</h1>
+
+    @if (currentUser$ | async; as user) {
+      <div class="user-block">
+        <p>{{ user.firstName }} {{ user.lastName }}</p>
+        <small>{{ user.role }}</small>
+      </div>
+    }
+
+    <nav>
+      <a routerLink="/dashboard">Dashboard</a>
+      <a routerLink="/clients">Clients</a>
+      <a routerLink="/projects">Projects</a>
+      <a routerLink="/tasks">Tasks</a>
+      <a routerLink="/my-tasks">My Tasks</a>
+    </nav>
+
+    <button type="button" (click)="logout()">Logout</button>
+  </aside>
+
+  <main class="content">
+    <router-outlet></router-outlet>
+  </main>
+</div>

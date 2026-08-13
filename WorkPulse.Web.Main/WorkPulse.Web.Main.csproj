@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.OpenApi" Version="3.10.0" />
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="10.2.3" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\WorkPulse.Web.API\WorkPulse.Web.API.csproj" />
+    <ProjectReference Include="..\WorkPulse.Integration.Sql\WorkPulse.Integration.Sql.csproj" />
+    <ProjectReference Include="..\src\WorkPulse.Infrastructure\WorkPulse.Infrastructure.csproj" />
+    <ProjectReference Include="..\src\WorkPulse.Application\WorkPulse.Application.csproj" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+</Project>

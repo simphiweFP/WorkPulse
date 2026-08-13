@@ -1,0 +1,41 @@
+<h2>Register</h2>
+
+<form [formGroup]="form" (ngSubmit)="submit()">
+  <label for="firstName">First name</label>
+  <input id="firstName" type="text" formControlName="firstName" />
+  @if (form.controls.firstName.touched && form.controls.firstName.invalid) {
+    <small>First name is required.</small>
+  }
+
+  <label for="lastName">Last name</label>
+  <input id="lastName" type="text" formControlName="lastName" />
+  @if (form.controls.lastName.touched && form.controls.lastName.invalid) {
+    <small>Last name is required.</small>
+  }
+
+  <label for="email">Email</label>
+  <input id="email" type="email" formControlName="email" />
+  @if (form.controls.email.touched && form.controls.email.invalid) {
+    <small>Email is required and must be valid.</small>
+  }
+
+  <label for="password">Password</label>
+  <input id="password" type="password" formControlName="password" />
+  @if (form.controls.password.touched && form.controls.password.invalid) {
+    <small>Password must be at least 8 chars with uppercase, lowercase, and number.</small>
+  }
+
+  <label for="confirmPassword">Confirm password</label>
+  <input id="confirmPassword" type="password" formControlName="confirmPassword" />
+  @if ((form.controls.confirmPassword.touched && form.controls.confirmPassword.invalid) || form.errors?.['passwordMismatch']) {
+    <small>Passwords must match.</small>
+  }
+
+  @if (errorMessage) {
+    <p class="error">{{ errorMessage }}</p>
+  }
+
+  <button type="submit" [disabled]="isSubmitting">Create account</button>
+</form>
+
+<p>Already have an account? <a routerLink="/login">Login</a></p>
