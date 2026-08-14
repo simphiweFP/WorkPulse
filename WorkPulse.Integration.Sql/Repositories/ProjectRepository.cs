@@ -16,7 +16,7 @@ public sealed class ProjectRepository : IProjectRepository
     public async Task<IReadOnlyCollection<Project>> GetAllAsync(CancellationToken cancellationToken = default)
     {
         const string sql = """
-                           SELECT Id, ClientId, Name, Description, Status, StartDate AS CreatedAt, EndDate AS UpdatedAt
+                           SELECT Id, ClientId, Name, Description, Status, CreatedAt, UpdatedAt
                            FROM Projects
                            ORDER BY Name
                            """;
@@ -29,7 +29,7 @@ public sealed class ProjectRepository : IProjectRepository
     public async Task<IReadOnlyCollection<Project>> GetByClientIdAsync(Guid clientId, CancellationToken cancellationToken = default)
     {
         const string sql = """
-                           SELECT Id, ClientId, Name, Description, Status, StartDate AS CreatedAt, EndDate AS UpdatedAt
+                           SELECT Id, ClientId, Name, Description, Status, CreatedAt, UpdatedAt
                            FROM Projects
                            WHERE ClientId = @ClientId
                            ORDER BY Name
@@ -43,7 +43,7 @@ public sealed class ProjectRepository : IProjectRepository
     public async Task<Project?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
         const string sql = """
-                           SELECT Id, ClientId, Name, Description, Status, StartDate AS CreatedAt, EndDate AS UpdatedAt
+                           SELECT Id, ClientId, Name, Description, Status, CreatedAt, UpdatedAt
                            FROM Projects
                            WHERE Id = @Id
                            """;
@@ -52,11 +52,20 @@ public sealed class ProjectRepository : IProjectRepository
         return await connection.QuerySingleOrDefaultAsync<Project>(new CommandDefinition(sql, new { Id = id }, cancellationToken: cancellationToken));
     }
 
+    public async Task<bool> ExistsAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        const string sql = "SELECT CASE WHEN EXISTS (SELECT 1 FROM Projects WHERE Id = @Id) THEN 1 ELSE 0 END";
+
+        await using var connection = (Microsoft.Data.SqlClient.SqlConnection)_connectionFactory.CreateConnection();
+        var count = await connection.ExecuteScalarAsync<int>(new CommandDefinition(sql, new { Id = id }, cancellationToken: cancellationToken));
+        return count > 0;
+    }
+
     public async Task CreateAsync(Project project, CancellationToken cancellationToken = default)
     {
         const string sql = """
-                           INSERT INTO Projects (Id, ClientId, Name, Description, StartDate, EndDate, Status, CreatedAt, UpdatedAt)
-                           VALUES (@Id, @ClientId, @Name, @Description, @StartDate, @EndDate, @Status, @CreatedAt, @UpdatedAt)
+                           INSERT INTO Projects (Id, ClientId, Name, Description, Status, CreatedAt, UpdatedAt)
+                           VALUES (@Id, @ClientId, @Name, @Description, @Status, @CreatedAt, @UpdatedAt)
                            """;
 
         await using var connection = (Microsoft.Data.SqlClient.SqlConnection)_connectionFactory.CreateConnection();
@@ -66,8 +75,6 @@ public sealed class ProjectRepository : IProjectRepository
             project.ClientId,
             project.Name,
             project.Description,
-            StartDate = project.CreatedAt,
-            EndDate = (DateTime?)null,
             Status = (int)project.Status,
             project.CreatedAt,
             project.UpdatedAt

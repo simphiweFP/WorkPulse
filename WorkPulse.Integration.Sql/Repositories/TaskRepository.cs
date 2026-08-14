@@ -9,6 +9,7 @@ namespace WorkPulse.Integration.Sql.Repositories;
 public sealed class TaskRepository : ITaskRepository
 {
     private readonly IDbConnectionFactory _connectionFactory;
+    private const string TaskSelectColumns = "Id, ProjectId, AssignedUserId AS AssignedToUserId, Title, Description, DueDate AS Deadline, Status, Priority, CreatedAt, UpdatedAt, CompletedAt";
 
     public TaskRepository(IDbConnectionFactory connectionFactory)
     {
@@ -17,8 +18,8 @@ public sealed class TaskRepository : ITaskRepository
 
     public async Task<IReadOnlyCollection<TaskItem>> GetAllAsync(CancellationToken cancellationToken = default)
     {
-        const string sql = """
-                           SELECT Id, ProjectId, AssignedUserId AS AssignedToUserId, Title, Description, DueDate AS Deadline, Status, Priority, CreatedAt, UpdatedAt, CompletedAt
+        var sql = $"""
+                           SELECT {TaskSelectColumns}
                            FROM Tasks
                            ORDER BY CreatedAt DESC
                            """;
@@ -30,8 +31,8 @@ public sealed class TaskRepository : ITaskRepository
 
     public async Task<TaskItem?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
-        const string sql = """
-                           SELECT Id, ProjectId, AssignedUserId AS AssignedToUserId, Title, Description, DueDate AS Deadline, Status, Priority, CreatedAt, UpdatedAt, CompletedAt
+        var sql = $"""
+                           SELECT {TaskSelectColumns}
                            FROM Tasks
                            WHERE Id = @Id
                            """;
@@ -42,8 +43,8 @@ public sealed class TaskRepository : ITaskRepository
 
     public async Task<IReadOnlyCollection<TaskItem>> GetByProjectIdAsync(Guid projectId, CancellationToken cancellationToken = default)
     {
-        const string sql = """
-                           SELECT Id, ProjectId, AssignedUserId AS AssignedToUserId, Title, Description, DueDate AS Deadline, Status, Priority, CreatedAt, UpdatedAt, CompletedAt
+        var sql = $"""
+                           SELECT {TaskSelectColumns}
                            FROM Tasks
                            WHERE ProjectId = @ProjectId
                            ORDER BY CreatedAt DESC
@@ -56,8 +57,8 @@ public sealed class TaskRepository : ITaskRepository
 
     public async Task<IReadOnlyCollection<TaskItem>> GetMyTasksAsync(string userId, TaskStatus? status, TaskPriority? priority, Guid? projectId, DateTime? dueDate, CancellationToken cancellationToken = default)
     {
-        var sql = """
-                  SELECT Id, ProjectId, AssignedUserId AS AssignedToUserId, Title, Description, DueDate AS Deadline, Status, Priority, CreatedAt, UpdatedAt, CompletedAt
+        var sql = $"""
+                  SELECT {TaskSelectColumns}
                   FROM Tasks
                   WHERE AssignedUserId = @UserId
                   """;

@@ -16,9 +16,9 @@ public sealed class ClientRepository : IClientRepository
     public async Task<IReadOnlyCollection<Client>> GetAllAsync(CancellationToken cancellationToken = default)
     {
         const string sql = """
-                           SELECT Id, Name, Email AS ContactEmail, Phone AS PhoneNumber, Address AS Description, CreatedAt, UpdatedAt,
-                                  Name AS ContactName
+                           SELECT Id, Name, ContactName, ContactEmail, PhoneNumber, Description, CreatedAt, UpdatedAt, IsDeleted
                            FROM Clients
+                           WHERE IsDeleted = 0
                            ORDER BY CreatedAt DESC
                            """;
 
@@ -30,21 +30,29 @@ public sealed class ClientRepository : IClientRepository
     public async Task<Client?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
         const string sql = """
-                           SELECT Id, Name, Email AS ContactEmail, Phone AS PhoneNumber, Address AS Description, CreatedAt, UpdatedAt,
-                                  Name AS ContactName
+                           SELECT Id, Name, ContactName, ContactEmail, PhoneNumber, Description, CreatedAt, UpdatedAt, IsDeleted
                            FROM Clients
-                           WHERE Id = @Id
+                           WHERE Id = @Id AND IsDeleted = 0
                            """;
 
         await using var connection = (Microsoft.Data.SqlClient.SqlConnection)_connectionFactory.CreateConnection();
         return await connection.QuerySingleOrDefaultAsync<Client>(new CommandDefinition(sql, new { Id = id }, cancellationToken: cancellationToken));
     }
 
+    public async Task<bool> ExistsByIdAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        const string sql = "SELECT COUNT(1) FROM Clients WHERE Id = @Id AND IsDeleted = 0";
+
+        await using var connection = (Microsoft.Data.SqlClient.SqlConnection)_connectionFactory.CreateConnection();
+        var count = await connection.ExecuteScalarAsync<int>(new CommandDefinition(sql, new { Id = id }, cancellationToken: cancellationToken));
+        return count > 0;
+    }
+
     public async Task CreateAsync(Client client, CancellationToken cancellationToken = default)
     {
         const string sql = """
-                           INSERT INTO Clients (Id, Name, Email, Phone, Address, CreatedAt, UpdatedAt)
-                           VALUES (@Id, @Name, @Email, @Phone, @Address, @CreatedAt, @UpdatedAt)
+                           INSERT INTO Clients (Id, Name, ContactName, ContactEmail, PhoneNumber, Description, CreatedAt, UpdatedAt, IsDeleted)
+                           VALUES (@Id, @Name, @ContactName, @ContactEmail, @PhoneNumber, @Description, @CreatedAt, @UpdatedAt, @IsDeleted)
                            """;
 
         await using var connection = (Microsoft.Data.SqlClient.SqlConnection)_connectionFactory.CreateConnection();
@@ -52,11 +60,13 @@ public sealed class ClientRepository : IClientRepository
         {
             client.Id,
             client.Name,
-            Email = client.ContactEmail,
-            Phone = client.PhoneNumber,
-            Address = client.Description,
+            client.ContactName,
+            client.ContactEmail,
+            client.PhoneNumber,
+            client.Description,
             client.CreatedAt,
-            client.UpdatedAt
+            client.UpdatedAt,
+            client.IsDeleted
         }, cancellationToken: cancellationToken));
     }
 
@@ -65,9 +75,10 @@ public sealed class ClientRepository : IClientRepository
         const string sql = """
                            UPDATE Clients
                            SET Name = @Name,
-                               Email = @Email,
-                               Phone = @Phone,
-                               Address = @Address,
+                               ContactName = @ContactName,
+                               ContactEmail = @ContactEmail,
+                               PhoneNumber = @PhoneNumber,
+                               Description = @Description,
                                UpdatedAt = @UpdatedAt
                            WHERE Id = @Id
                            """;
@@ -77,24 +88,25 @@ public sealed class ClientRepository : IClientRepository
         {
             client.Id,
             client.Name,
-            Email = client.ContactEmail,
-            Phone = client.PhoneNumber,
-            Address = client.Description,
+            client.ContactName,
+            client.ContactEmail,
+            client.PhoneNumber,
+            client.Description,
             client.UpdatedAt
         }, cancellationToken: cancellationToken));
     }
 
     public async Task DeleteAsync(Guid id, CancellationToken cancellationToken = default)
     {
-        const string sql = "DELETE FROM Clients WHERE Id = @Id";
+        const string sql = "UPDATE Clients SET IsDeleted = 1, UpdatedAt = @UpdatedAt WHERE Id = @Id";
 
         await using var connection = (Microsoft.Data.SqlClient.SqlConnection)_connectionFactory.CreateConnection();
-        await connection.ExecuteAsync(new CommandDefinition(sql, new { Id = id }, cancellationToken: cancellationToken));
+        await connection.ExecuteAsync(new CommandDefinition(sql, new { Id = id, UpdatedAt = DateTime.UtcNow }, cancellationToken: cancellationToken));
     }
 
     public async Task<bool> ExistsByEmailAsync(string email, CancellationToken cancellationToken = default)
     {
-        const string sql = "SELECT COUNT(1) FROM Clients WHERE Email = @Email";
+        const string sql = "SELECT COUNT(1) FROM Clients WHERE ContactEmail = @Email AND IsDeleted = 0";
 
         await using var connection = (Microsoft.Data.SqlClient.SqlConnection)_connectionFactory.CreateConnection();
         var count = await connection.ExecuteScalarAsync<int>(new CommandDefinition(sql, new { Email = email }, cancellationToken: cancellationToken));

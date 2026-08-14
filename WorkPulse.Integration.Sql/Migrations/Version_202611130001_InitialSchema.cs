@@ -41,13 +41,15 @@ public sealed class Version_202611130001_InitialSchema : Migration
         Create.Table("Clients")
             .WithColumn("Id").AsGuid().PrimaryKey()
             .WithColumn("Name").AsString(200).NotNullable()
-            .WithColumn("Email").AsString(256).NotNullable()
-            .WithColumn("Phone").AsString(50).NotNullable()
-            .WithColumn("Address").AsString(1000).NotNullable()
+            .WithColumn("ContactName").AsString(200).NotNullable()
+            .WithColumn("ContactEmail").AsString(256).NotNullable()
+            .WithColumn("PhoneNumber").AsString(50).NotNullable()
+            .WithColumn("Description").AsString(1000).NotNullable()
             .WithColumn("CreatedAt").AsDateTime2().NotNullable()
-            .WithColumn("UpdatedAt").AsDateTime2().NotNullable();
+            .WithColumn("UpdatedAt").AsDateTime2().NotNullable()
+            .WithColumn("IsDeleted").AsBoolean().NotNullable().WithDefaultValue(false);
 
-        Create.Index("IX_Clients_Email").OnTable("Clients").OnColumn("Email").Ascending().WithOptions().Unique();
+        Create.Index("IX_Clients_ContactEmail").OnTable("Clients").OnColumn("ContactEmail").Ascending().WithOptions().Unique();
 
         Create.Table("Projects")
             .WithColumn("Id").AsGuid().PrimaryKey()
@@ -64,6 +66,7 @@ public sealed class Version_202611130001_InitialSchema : Migration
             .FromTable("Projects").ForeignColumn("ClientId")
             .ToTable("Clients").PrimaryColumn("Id");
         Create.Index("IX_Projects_ClientId").OnTable("Projects").OnColumn("ClientId").Ascending();
+        Create.Index("IX_Projects_Status").OnTable("Projects").OnColumn("Status").Ascending();
 
         Create.Table("Tasks")
             .WithColumn("Id").AsGuid().PrimaryKey()
@@ -89,6 +92,7 @@ public sealed class Version_202611130001_InitialSchema : Migration
         Create.Index("IX_Tasks_AssignedUserId").OnTable("Tasks").OnColumn("AssignedUserId").Ascending();
         Create.Index("IX_Tasks_DueDate").OnTable("Tasks").OnColumn("DueDate").Ascending();
         Create.Index("IX_Tasks_Status").OnTable("Tasks").OnColumn("Status").Ascending();
+        Create.Index("IX_Tasks_Priority").OnTable("Tasks").OnColumn("Priority").Ascending();
     }
 
     public override void Down()

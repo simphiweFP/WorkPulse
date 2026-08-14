@@ -10,6 +10,7 @@ public class Client
     public string Description { get; set; } = string.Empty;
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+    public bool IsDeleted { get; set; }
 
     public ICollection<Project> Projects { get; set; } = new List<Project>();
 }

@@ -1,4 +1,5 @@
 using Microsoft.OpenApi;
+using WorkPulse.Application;
 using WorkPulse.Integration.Identity.DependencyInjection;
 using WorkPulse.Integration.Sql.DependencyInjection;
 using WorkPulse.Web.API.DependencyInjection;
@@ -7,6 +8,7 @@ using WorkPulse.Web.API.Middleware;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddWorkPulseWebApi();
+builder.Services.AddApplication();
 builder.Services.AddWorkPulseIdentityIntegration(builder.Configuration);
 builder.Services.AddWorkPulseSqlIntegration(builder.Configuration);
 

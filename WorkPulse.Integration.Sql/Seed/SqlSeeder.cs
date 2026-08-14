@@ -44,7 +44,7 @@ public sealed class SqlSeeder
     {
         const string sql = """
                            MERGE Roles AS target
-                           USING (VALUES (@Admin), (@Manager), (@Employee)) AS source (Name)
+                           USING (VALUES (@Admin), (@Developer)) AS source (Name)
                            ON target.Name = source.Name
                            WHEN NOT MATCHED THEN INSERT (Name) VALUES (source.Name);
                            """;
@@ -52,8 +52,7 @@ public sealed class SqlSeeder
         await connection.ExecuteAsync(new CommandDefinition(sql, new
         {
             Admin = Roles.Admin,
-            Manager = Roles.Manager,
-            Employee = Roles.Employee
+            Developer = Roles.Developer
         }, cancellationToken: cancellationToken));
     }
 
@@ -109,28 +108,27 @@ public sealed class SqlSeeder
         var now = DateTime.UtcNow;
 
         await connection.ExecuteAsync(new CommandDefinition(
-            "INSERT INTO Clients (Id, Name, Email, Phone, Address, CreatedAt, UpdatedAt) VALUES (@Id, @Name, @Email, @Phone, @Address, @CreatedAt, @UpdatedAt)",
+            "INSERT INTO Clients (Id, Name, ContactName, ContactEmail, PhoneNumber, Description, CreatedAt, UpdatedAt, IsDeleted) VALUES (@Id, @Name, @ContactName, @ContactEmail, @PhoneNumber, @Description, @CreatedAt, @UpdatedAt, 0)",
             new
             {
                 Id = clientId,
                 Name = "Northwind Systems",
-                Email = "contact@northwind.example",
-                Phone = "+1-555-0101",
-                Address = "1420 Lakeview Ave",
+                ContactName = "Northwind Office",
+                ContactEmail = "contact@northwind.example",
+                PhoneNumber = "+1-555-0101",
+                Description = "1420 Lakeview Ave",
                 CreatedAt = now,
                 UpdatedAt = now
             }, cancellationToken: cancellationToken));
 
         await connection.ExecuteAsync(new CommandDefinition(
-            "INSERT INTO Projects (Id, ClientId, Name, Description, StartDate, EndDate, Status, CreatedAt, UpdatedAt) VALUES (@Id, @ClientId, @Name, @Description, @StartDate, @EndDate, @Status, @CreatedAt, @UpdatedAt)",
+            "INSERT INTO Projects (Id, ClientId, Name, Description, Status, CreatedAt, UpdatedAt) VALUES (@Id, @ClientId, @Name, @Description, @Status, @CreatedAt, @UpdatedAt)",
             new
             {
                 Id = projectId,
                 ClientId = clientId,
                 Name = "Inventory API Revamp",
                 Description = "Modernize internal inventory APIs.",
-                StartDate = now.Date,
-                EndDate = (DateTime?)null,
                 Status = (int)ProjectStatus.Active,
                 CreatedAt = now,
                 UpdatedAt = now

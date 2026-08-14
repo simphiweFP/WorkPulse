@@ -1,5 +1,6 @@
 using System.Reflection;
 using Microsoft.Extensions.DependencyInjection;
+using WorkPulse.Application;
 using WorkPulse.Web.API.Controllers;
 
 namespace WorkPulse.Web.API.DependencyInjection;
@@ -8,7 +9,12 @@ public static class ServiceCollectionExtensions
 {
     public static IServiceCollection AddWorkPulseWebApi(this IServiceCollection services)
     {
-        services.AddControllers().AddApplicationPart(typeof(AuthController).Assembly);
+        var mvcBuilder = services.AddControllers();
+        mvcBuilder.AddApplicationPart(typeof(AuthController).Assembly);
+        mvcBuilder.AddApplicationPart(typeof(ClientsController).Assembly);
+        mvcBuilder.AddApplicationPart(typeof(ProjectsController).Assembly);
+        mvcBuilder.AddApplicationPart(typeof(TasksController).Assembly);
+        services.AddApplication();
         return services;
     }
 }

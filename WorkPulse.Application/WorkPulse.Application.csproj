@@ -4,10 +4,6 @@
     <ProjectReference Include="..\WorkPulse.Domain\WorkPulse.Domain.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Compile Include="..\src\WorkPulse.Application\**\*.cs" Exclude="..\src\WorkPulse.Application\bin\**;..\src\WorkPulse.Application\obj\**" LinkBase="Legacy" />
-  </ItemGroup>
-
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>

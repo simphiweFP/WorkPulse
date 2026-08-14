@@ -16,5 +16,13 @@ public class TaskItem
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
     public DateTime? CompletedAt { get; set; }
 
+    public bool IsScheduledForToday(DateTime utcNow)
+    {
+        var today = utcNow.Date;
+        return Deadline.HasValue
+            && Deadline.Value.Date == today
+            && Status != Enums.TaskStatus.Completed;
+    }
+
     public Project Project { get; set; } = null!;
 }

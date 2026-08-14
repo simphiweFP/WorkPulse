@@ -7,6 +7,7 @@ namespace WorkPulse.Integration.Sql.Transactions;
 public sealed class DapperUnitOfWork : IUnitOfWork
 {
     private readonly IDbConnectionFactory _connectionFactory;
+    private SqlConnection? _connection;
 
     public DapperUnitOfWork(IDbConnectionFactory connectionFactory)
     {
@@ -15,17 +16,17 @@ public sealed class DapperUnitOfWork : IUnitOfWork
 
     public async Task ExecuteInTransactionAsync(Func<CancellationToken, Task> action, CancellationToken cancellationToken = default)
     {
-        using var connection = (SqlConnection)_connectionFactory.CreateConnection();
-        if (connection.State != System.Data.ConnectionState.Open)
+        _connection ??= (SqlConnection)_connectionFactory.CreateConnection();
+        if (_connection.State != System.Data.ConnectionState.Open)
         {
-            await connection.OpenAsync(cancellationToken);
+            await _connection.OpenAsync(cancellationToken);
         }
 
-        await using var transaction = await connection.BeginTransactionAsync(cancellationToken);
+        await using var transaction = await _connection.BeginTransactionAsync(cancellationToken);
 
         try
         {
-            await connection.ExecuteAsync(new CommandDefinition("SET XACT_ABORT ON", transaction: transaction, cancellationToken: cancellationToken));
+            await _connection.ExecuteAsync(new CommandDefinition("SET XACT_ABORT ON", transaction: transaction, cancellationToken: cancellationToken));
             await action(cancellationToken);
             await transaction.CommitAsync(cancellationToken);
         }
@@ -34,5 +35,10 @@ public sealed class DapperUnitOfWork : IUnitOfWork
             await transaction.RollbackAsync(cancellationToken);
             throw;
         }
+    }
+
+    public ValueTask DisposeAsync()
+    {
+        return _connection is null ? ValueTask.CompletedTask : _connection.DisposeAsync();
     }
 }
