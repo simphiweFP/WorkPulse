@@ -1,8 +1,8 @@
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using WorkPulse.Application.DTOs.Auth;
-using WorkPulse.Application.Interfaces;
+using WorkPulse.Integration.Identity.Models;
+using WorkPulse.Integration.Identity.Services;
 
 namespace WorkPulse.Web.API.Controllers;
 
@@ -10,18 +10,18 @@ namespace WorkPulse.Web.API.Controllers;
 [Route("api/[controller]")]
 public class AuthController : ControllerBase
 {
-    private readonly IAuthService _authService;
+    private readonly IIdentityService _identityService;
 
-    public AuthController(IAuthService authService)
+    public AuthController(IIdentityService identityService)
     {
-        _authService = authService;
+        _identityService = identityService;
     }
 
     [HttpPost("register")]
     [AllowAnonymous]
-    public async Task<IActionResult> Register([FromBody] RegisterRequestDto request, CancellationToken cancellationToken)
+    public async Task<IActionResult> Register([FromBody] RegisterUserRequest request, CancellationToken cancellationToken)
     {
-        var result = await _authService.RegisterAsync(request, cancellationToken);
+        var result = await _identityService.RegisterAsync(request, cancellationToken);
         if (!result.Succeeded)
         {
             return BadRequest(new { message = result.Error });
@@ -32,9 +32,9 @@ public class AuthController : ControllerBase
 
     [HttpPost("login")]
     [AllowAnonymous]
-    public async Task<IActionResult> Login([FromBody] LoginRequestDto request, CancellationToken cancellationToken)
+    public async Task<IActionResult> Login([FromBody] LoginRequest request, CancellationToken cancellationToken)
     {
-        var result = await _authService.LoginAsync(request, cancellationToken);
+        var result = await _identityService.LoginAsync(request, cancellationToken);
         if (!result.Succeeded)
         {
             return Unauthorized(new { message = "Invalid email or password." });
@@ -53,7 +53,7 @@ public class AuthController : ControllerBase
             return Unauthorized();
         }
 
-        var result = await _authService.GetCurrentUserAsync(userId, cancellationToken);
+        var result = await _identityService.GetCurrentUserAsync(userId, cancellationToken);
         if (!result.Succeeded || result.Value is null)
         {
             return NotFound(new { message = "User not found." });

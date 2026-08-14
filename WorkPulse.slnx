@@ -1,7 +1,5 @@
 <Solution>
-  <Project Path='src/WorkPulse.Application/WorkPulse.Application.csproj' />
-  <Project Path='src/WorkPulse.Domain/WorkPulse.Domain.csproj' />
-  <Project Path='src/WorkPulse.Infrastructure/WorkPulse.Infrastructure.csproj' />
+  <Project Path='WorkPulse.Domain/WorkPulse.Domain.csproj' />
   <Project Path='WorkPulse.Domain.Tests/WorkPulse.Domain.Tests.csproj' />
   <Project Path='WorkPulse.Integration.Sql/WorkPulse.Integration.Sql.csproj' />
   <Project Path='WorkPulse.Integration.Sql.Tests/WorkPulse.Integration.Sql.Tests.csproj' />

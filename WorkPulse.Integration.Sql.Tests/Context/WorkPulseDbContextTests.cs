@@ -1,39 +1,25 @@
-using Microsoft.Data.Sqlite;
-using Microsoft.EntityFrameworkCore;
-using WorkPulse.Domain.Entities;
-using WorkPulse.Integration.Sql.Context;
+using Microsoft.Extensions.Configuration;
+using WorkPulse.Integration.Sql.Connections;
 
 namespace WorkPulse.Integration.Sql.Tests.Context;
 
 public class WorkPulseDbContextTests
 {
     [Fact]
-    public async Task CanSaveAndLoadClientEntity()
+    public void SqlConnectionFactory_ShouldCreateSqlConnection()
     {
-        await using var connection = new SqliteConnection("DataSource=:memory:");
-        await connection.OpenAsync();
-
-        var options = new DbContextOptionsBuilder<WorkPulseDbContext>()
-            .UseSqlite(connection)
-            .Options;
-
-        await using var context = new WorkPulseDbContext(options);
-        await context.Database.EnsureCreatedAsync();
-
-        var client = new Client
+        var settings = new Dictionary<string, string?>
         {
-            Id = Guid.NewGuid(),
-            Name = "Acme",
-            ContactName = "Jane Doe",
-            ContactEmail = "jane@acme.example",
-            PhoneNumber = "123",
-            Description = "Test client"
+            ["ConnectionStrings:DefaultConnection"] = "Server=(localdb)\\MSSQLLocalDB;Database=WorkPulseDbTests;Trusted_Connection=True;"
         };
 
-        context.Clients.Add(client);
-        await context.SaveChangesAsync();
+        var configuration = new ConfigurationBuilder()
+            .AddInMemoryCollection(settings)
+            .Build();
 
-        var saved = await context.Clients.SingleAsync();
-        Assert.Equal("Acme", saved.Name);
+        var factory = new SqlConnectionFactory(configuration);
+        using var connection = factory.CreateConnection();
+
+        Assert.Equal("SqlConnection", connection.GetType().Name);
     }
 }

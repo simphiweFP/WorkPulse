@@ -5,8 +5,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\src\WorkPulse.Domain\WorkPulse.Domain.csproj" />
-    <ProjectReference Include="..\src\WorkPulse.Application\WorkPulse.Application.csproj" />
+    <ProjectReference Include="..\WorkPulse.Domain\WorkPulse.Domain.csproj" />
+    <ProjectReference Include="..\WorkPulse.Application\WorkPulse.Application.csproj" />
   </ItemGroup>
 
   <ItemGroup>

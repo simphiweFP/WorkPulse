@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
@@ -19,7 +19,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\WorkPulse.Integration.Sql\WorkPulse.Integration.Sql.csproj" />
+    <ProjectReference Include="..\WorkPulse.Integration.Identity\WorkPulse.Integration.Identity.csproj" />
   </ItemGroup>
 
 </Project>

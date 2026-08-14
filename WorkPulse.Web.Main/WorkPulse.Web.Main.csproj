@@ -8,8 +8,8 @@
   <ItemGroup>
     <ProjectReference Include="..\WorkPulse.Web.API\WorkPulse.Web.API.csproj" />
     <ProjectReference Include="..\WorkPulse.Integration.Sql\WorkPulse.Integration.Sql.csproj" />
-    <ProjectReference Include="..\src\WorkPulse.Infrastructure\WorkPulse.Infrastructure.csproj" />
-    <ProjectReference Include="..\src\WorkPulse.Application\WorkPulse.Application.csproj" />
+    <ProjectReference Include="..\WorkPulse.Integration.Identity\WorkPulse.Integration.Identity.csproj" />
+    <ProjectReference Include="..\WorkPulse.Application\WorkPulse.Application.csproj" />
   </ItemGroup>
 
   <PropertyGroup>

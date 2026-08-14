@@ -124,7 +124,20 @@ public class AuthEndpointsTests
         await using var factory = new TestWebApplicationFactory();
         using var client = factory.CreateClient();
 
-        var response = await client.PostAsJsonAsync("/api/auth/login", new { email = "developer@workpulse.local", password = "WorkPulseDev123!" });
+        var email = $"login{Guid.NewGuid():N}@example.com";
+        var register = new
+        {
+            firstName = "Login",
+            lastName = "User",
+            email,
+            password = "ValidPass123",
+            confirmPassword = "ValidPass123"
+        };
+
+        var registerResponse = await client.PostAsJsonAsync("/api/auth/register", register);
+        Assert.Equal(HttpStatusCode.Created, registerResponse.StatusCode);
+
+        var response = await client.PostAsJsonAsync("/api/auth/login", new { email, password = "ValidPass123" });
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         var json = await response.Content.ReadFromJsonAsync<JsonElement>();
