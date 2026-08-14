@@ -38,6 +38,8 @@ public sealed class ProjectService : IProjectService
 
     public async Task<ProjectDto> CreateAsync(CreateProjectRequestDto request, CancellationToken cancellationToken = default)
     {
+        ValidateStatus(request.Status);
+
         var client = await _clientRepository.GetByIdAsync(request.ClientId, cancellationToken);
         if (client is null)
         {
@@ -62,6 +64,8 @@ public sealed class ProjectService : IProjectService
 
     public async Task UpdateAsync(Guid id, UpdateProjectRequestDto request, CancellationToken cancellationToken = default)
     {
+        ValidateStatus(request.Status);
+
         var existing = await _projectRepository.GetByIdAsync(id, cancellationToken);
         if (existing is null)
         {
@@ -110,4 +114,12 @@ public sealed class ProjectService : IProjectService
         OpenTaskCount = 0,
         CompletedTaskCount = 0
     };
+
+    private static void ValidateStatus(WorkPulse.Domain.Enums.ProjectStatus status)
+    {
+        if (!Enum.IsDefined(status))
+        {
+            throw new ValidationException("Invalid project status.");
+        }
+    }
 }

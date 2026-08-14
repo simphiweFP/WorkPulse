@@ -4,5 +4,5 @@ namespace WorkPulse.Integration.Identity.Authentication;
 
 public interface IJwtTokenService
 {
-    Task<string> CreateTokenAsync(ApplicationUser user, CancellationToken cancellationToken = default);
+    Task<string> CreateTokenAsync(AuthUser user, IReadOnlyCollection<string> roles, CancellationToken cancellationToken = default);
 }

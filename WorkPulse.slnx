@@ -4,9 +4,11 @@
   <Project Path='WorkPulse.Domain.Tests/WorkPulse.Domain.Tests.csproj' />
   <Project Path='WorkPulse.Integration.Sql/WorkPulse.Integration.Sql.csproj' />
   <Project Path='WorkPulse.Integration.Sql.Tests/WorkPulse.Integration.Sql.Tests.csproj' />
+  <Project Path='WorkPulse.Integration.Identity/WorkPulse.Integration.Identity.csproj' />
   <Project Path='WorkPulse.Web.API/WorkPulse.Web.API.csproj' />
   <Project Path='WorkPulse.Web.API.Tests/WorkPulse.Web.API.Tests.csproj' />
   <Project Path='WorkPulse.Web.Main/WorkPulse.Web.Main.csproj' />
   <Project Path='WorkPulse.Web.Main.Tests/WorkPulse.Web.Main.Tests.csproj' />
 </Solution>
+
 

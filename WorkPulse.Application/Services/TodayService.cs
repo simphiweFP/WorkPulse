@@ -73,7 +73,10 @@ public sealed class TodayService : ITodayService
         return new TodayTaskCandidate
         {
             Id = task.Id,
+            ProjectId = task.ProjectId,
+            ClientId = client.Id,
             Title = task.Title,
+            Description = task.Description,
             ClientName = client.Name,
             ProjectName = project.Name,
             Priority = task.Priority,
@@ -85,7 +88,10 @@ public sealed class TodayService : ITodayService
     private static TodayTaskDto MapTask(TodayTaskCandidate candidate) => new()
     {
         Id = candidate.Id,
+        ProjectId = candidate.ProjectId,
+        ClientId = candidate.ClientId,
         Title = candidate.Title,
+        Description = candidate.Description,
         ClientName = candidate.ClientName,
         ProjectName = candidate.ProjectName,
         Priority = candidate.Priority,

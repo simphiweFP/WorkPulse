@@ -28,12 +28,16 @@ public static class DatabaseInitializer
         var hasVersionInfo = await connection.ExecuteScalarAsync<int>(
             "SELECT COUNT(1) FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = 'dbo' AND TABLE_NAME = 'VersionInfo'") > 0;
 
-        var hasCoreTables = await connection.ExecuteScalarAsync<int>(
-            "SELECT COUNT(1) FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = 'dbo' AND TABLE_NAME IN ('Users', 'Clients', 'Projects', 'Tasks')") >= 4;
+        var existingCoreTables = await connection.ExecuteScalarAsync<int>(
+            "SELECT COUNT(1) FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = 'dbo' AND TABLE_NAME IN ('Users', 'Clients', 'Projects', 'Tasks')");
 
-        if (!hasCoreTables)
+        if (!hasVersionInfo && existingCoreTables == 0)
         {
             migrationRunner.MigrateUp();
+        }
+        else if (!hasVersionInfo && existingCoreTables > 0)
+        {
+            logger.LogWarning("Skipping migrations because a partial schema already exists without VersionInfo. The database should be recreated for a clean migration run.");
         }
         else
         {

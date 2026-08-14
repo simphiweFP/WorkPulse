@@ -6,7 +6,10 @@ namespace WorkPulse.Domain.Services;
 public sealed record TodayTaskCandidate
 {
     public Guid Id { get; init; }
+    public Guid ProjectId { get; init; }
+    public Guid ClientId { get; init; }
     public string Title { get; init; } = string.Empty;
+    public string Description { get; init; } = string.Empty;
     public string ClientName { get; init; } = string.Empty;
     public string ProjectName { get; init; } = string.Empty;
     public TaskPriority Priority { get; init; }

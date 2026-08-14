@@ -5,6 +5,7 @@ namespace WorkPulse.Domain.Services;
 
 public sealed class TodayTaskService : ITodayTaskService
 {
+    private const int MaxUpcomingDaysToInclude = 3;
     private const int OverdueScore = 100;
     private const int DueTodayScore = 80;
     private const int DueTomorrowScore = 50;
@@ -21,11 +22,14 @@ public sealed class TodayTaskService : ITodayTaskService
         var today = utcToday.Date;
         return tasks
             .Where(task => task.Status != TaskStatus.Completed)
+            .Where(task => ShouldInclude(task, today))
             .Select(task => ApplyScoring(task, today))
             .Where(task => task.Score > 0)
             .OrderByDescending(task => task.Score)
             .ThenBy(task => task.DueDate ?? DateTime.MaxValue)
+            .ThenByDescending(task => task.Priority)
             .ThenBy(task => task.Title)
+            .ThenBy(task => task.Id)
             .ToArray();
     }
 
@@ -45,6 +49,24 @@ public sealed class TodayTaskService : ITodayTaskService
     public IReadOnlyCollection<TodayTaskCandidate> GetAdminSnapshot(IEnumerable<TodayTaskCandidate> tasks, DateTime utcToday)
         => RankDeveloperTasks(tasks, utcToday);
 
+    private static bool ShouldInclude(TodayTaskCandidate task, DateTime today)
+    {
+        if (!task.DueDate.HasValue)
+        {
+            return task.Priority is TaskPriority.High or TaskPriority.Critical;
+        }
+
+        var due = task.DueDate.Value.Date;
+        var days = (due - today).Days;
+
+        if (days <= MaxUpcomingDaysToInclude)
+        {
+            return true;
+        }
+
+        return task.Priority is TaskPriority.High or TaskPriority.Critical;
+    }
+
     private static TodayTaskCandidate ApplyScoring(TodayTaskCandidate task, DateTime today)
     {
         var score = 0;
@@ -53,7 +75,12 @@ public sealed class TodayTaskService : ITodayTaskService
         if (!task.DueDate.HasValue)
         {
             score += PriorityScore(task.Priority);
-            reason = PriorityReason(task.Priority);
+            reason = task.Priority switch
+            {
+                TaskPriority.Critical => "Critical priority with no deadline",
+                TaskPriority.High => "High priority with no deadline",
+                _ => PriorityReason(task.Priority)
+            };
             return task with { Score = score, RecommendationReason = reason };
         }
 
@@ -83,6 +110,15 @@ public sealed class TodayTaskService : ITodayTaskService
         {
             score += DueInThreeDaysScore;
             reason = "Due in 3 days";
+        }
+        else if (task.Priority is TaskPriority.High or TaskPriority.Critical)
+        {
+            reason = task.Priority switch
+            {
+                TaskPriority.Critical => "Critical priority upcoming",
+                TaskPriority.High => "High priority upcoming",
+                _ => string.Empty
+            };
         }
 
         score += PriorityScore(task.Priority);

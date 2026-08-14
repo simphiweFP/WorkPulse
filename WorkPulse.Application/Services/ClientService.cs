@@ -20,7 +20,7 @@ public sealed class ClientService : IClientService
     }
 
     public Task<IReadOnlyCollection<ClientDto>> GetAllAsync(CancellationToken cancellationToken = default)
-        => _clientRepository.GetAllAsync(cancellationToken).ContinueWith(task => (IReadOnlyCollection<ClientDto>)task.Result.Select(Map).ToArray(), cancellationToken);
+        => GetAllAsyncImpl(cancellationToken);
 
     public async Task<ClientDto> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
@@ -112,4 +112,7 @@ public sealed class ClientService : IClientService
             throw new WorkPulse.Application.Common.Exceptions.ValidationException("A valid contact email is required.");
         }
     }
+
+    private async Task<IReadOnlyCollection<ClientDto>> GetAllAsyncImpl(CancellationToken cancellationToken)
+        => (await _clientRepository.GetAllAsync(cancellationToken)).Select(Map).ToArray();
 }

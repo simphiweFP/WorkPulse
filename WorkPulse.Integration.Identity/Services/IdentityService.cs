@@ -1,19 +1,23 @@
-using Microsoft.AspNetCore.Identity;
+using WorkPulse.Application.Interfaces;
 using WorkPulse.Integration.Identity.Authentication;
 using WorkPulse.Integration.Identity.Common;
 using WorkPulse.Integration.Identity.Models;
 using WorkPulse.Integration.Identity.Roles;
+using DomainUser = WorkPulse.Domain.Entities.ApplicationUser;
+using PasswordHasherContract = WorkPulse.Application.Interfaces.IPasswordHasher;
 
 namespace WorkPulse.Integration.Identity.Services;
 
 public class IdentityService : IIdentityService
 {
-    private readonly UserManager<ApplicationUser> _userManager;
+    private readonly IUserRepository _userRepository;
+    private readonly PasswordHasherContract _passwordHasher;
     private readonly IJwtTokenService _jwtTokenService;
 
-    public IdentityService(UserManager<ApplicationUser> userManager, IJwtTokenService jwtTokenService)
+    public IdentityService(IUserRepository userRepository, PasswordHasherContract passwordHasher, IJwtTokenService jwtTokenService)
     {
-        _userManager = userManager;
+        _userRepository = userRepository;
+        _passwordHasher = passwordHasher;
         _jwtTokenService = jwtTokenService;
     }
 
@@ -26,34 +30,32 @@ public class IdentityService : IIdentityService
             return Result<AuthResponse>.Failure("Password and ConfirmPassword do not match.");
         }
 
-        var existingUser = await _userManager.FindByEmailAsync(request.Email.Trim());
-        if (existingUser is not null)
+        var email = request.Email.Trim().ToLowerInvariant();
+        if (await _userRepository.EmailExistsAsync(email, cancellationToken))
         {
             return Result<AuthResponse>.Failure("An account with this email already exists.");
         }
 
-        var user = new ApplicationUser
+        var user = new DomainUser
         {
+            Id = Guid.NewGuid().ToString(),
             FirstName = request.FirstName.Trim(),
             LastName = request.LastName.Trim(),
-            Email = request.Email.Trim(),
-            UserName = request.Email.Trim(),
+            Email = email,
+            UserName = email,
             CreatedAt = DateTime.UtcNow,
-            UpdatedAt = DateTime.UtcNow
+            UpdatedAt = DateTime.UtcNow,
+            EmailConfirmed = true
         };
 
-        var createResult = await _userManager.CreateAsync(user, request.Password);
-        if (!createResult.Succeeded)
-        {
-            return Result<AuthResponse>.Failure(createResult.Errors.FirstOrDefault()?.Description ?? "Registration failed.");
-        }
+        var roles = new[] { WorkPulseRoles.Developer };
+        await _userRepository.CreateAsync(user, _passwordHasher.Hash(request.Password), roles, cancellationToken);
 
-        await _userManager.AddToRoleAsync(user, WorkPulseRoles.Developer);
-
-        var token = await _jwtTokenService.CreateTokenAsync(user, cancellationToken);
+        var authUser = await BuildUserAsync(user, roles, cancellationToken);
+        var token = await _jwtTokenService.CreateTokenAsync(authUser, roles, cancellationToken);
         return Result<AuthResponse>.Success(new AuthResponse
         {
-            User = await BuildUserAsync(user, cancellationToken),
+            User = authUser,
             Token = token
         });
     }
@@ -62,22 +64,23 @@ public class IdentityService : IIdentityService
     {
         cancellationToken.ThrowIfCancellationRequested();
 
-        var user = await _userManager.FindByEmailAsync(request.Email.Trim());
+        var user = await _userRepository.GetByEmailAsync(request.Email.Trim().ToLowerInvariant(), cancellationToken);
         if (user is null)
         {
             return Result<AuthResponse>.Failure("Invalid email or password.");
         }
 
-        var passwordValid = await _userManager.CheckPasswordAsync(user, request.Password);
-        if (!passwordValid)
+        if (!_passwordHasher.Verify(user.PasswordHash, request.Password))
         {
             return Result<AuthResponse>.Failure("Invalid email or password.");
         }
 
-        var token = await _jwtTokenService.CreateTokenAsync(user, cancellationToken);
+        var roles = await _userRepository.GetRolesAsync(user.Id, cancellationToken);
+        var authUser = await BuildUserAsync(user, roles, cancellationToken);
+        var token = await _jwtTokenService.CreateTokenAsync(authUser, roles, cancellationToken);
         return Result<AuthResponse>.Success(new AuthResponse
         {
-            User = await BuildUserAsync(user, cancellationToken),
+            User = authUser,
             Token = token
         });
     }
@@ -86,25 +89,27 @@ public class IdentityService : IIdentityService
     {
         cancellationToken.ThrowIfCancellationRequested();
 
-        var user = await _userManager.FindByIdAsync(userId);
+        var user = await _userRepository.GetByIdAsync(userId, cancellationToken);
         if (user is null)
         {
             return Result<AuthUser>.Failure("User not found.");
         }
 
-        return Result<AuthUser>.Success(await BuildUserAsync(user, cancellationToken));
+        var roles = await _userRepository.GetRolesAsync(user.Id, cancellationToken);
+        return Result<AuthUser>.Success(await BuildUserAsync(user, roles, cancellationToken));
     }
 
-    private async Task<AuthUser> BuildUserAsync(ApplicationUser user, CancellationToken cancellationToken)
+    private static Task<AuthUser> BuildUserAsync(DomainUser user, IReadOnlyCollection<string> roles, CancellationToken cancellationToken)
     {
-        var role = (await _userManager.GetRolesAsync(user)).FirstOrDefault() ?? string.Empty;
-        return new AuthUser
+        cancellationToken.ThrowIfCancellationRequested();
+
+        return Task.FromResult(new AuthUser
         {
             Id = user.Id,
             FirstName = user.FirstName,
             LastName = user.LastName,
             Email = user.Email ?? string.Empty,
-            Role = role
-        };
+            Role = roles.FirstOrDefault() ?? string.Empty
+        });
     }
 }

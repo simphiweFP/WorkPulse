@@ -16,12 +16,62 @@ public class TaskItem
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
     public DateTime? CompletedAt { get; set; }
 
+    public bool IsCompleted => Status == Enums.TaskStatus.Completed;
+
     public bool IsScheduledForToday(DateTime utcNow)
     {
         var today = utcNow.Date;
         return Deadline.HasValue
             && Deadline.Value.Date == today
-            && Status != Enums.TaskStatus.Completed;
+            && !IsCompleted;
+    }
+
+    public void AssignTo(string? userId, DateTime utcNow)
+    {
+        if (IsCompleted)
+        {
+            throw new InvalidOperationException("Completed tasks cannot be reassigned.");
+        }
+
+        AssignedToUserId = userId;
+        UpdatedAt = utcNow;
+    }
+
+    public void ChangeStatus(Enums.TaskStatus newStatus, DateTime utcNow)
+    {
+        if (Status == Enums.TaskStatus.Completed && newStatus != Enums.TaskStatus.Completed)
+        {
+            throw new InvalidOperationException("Completed tasks cannot be reopened.");
+        }
+
+        if (Status == newStatus)
+        {
+            return;
+        }
+
+        if (Status == Enums.TaskStatus.Todo && newStatus == Enums.TaskStatus.InProgress)
+        {
+            Status = newStatus;
+            UpdatedAt = utcNow;
+            return;
+        }
+
+        if (Status is Enums.TaskStatus.Todo or Enums.TaskStatus.InProgress && newStatus == Enums.TaskStatus.Completed)
+        {
+            Status = newStatus;
+            CompletedAt ??= utcNow;
+            UpdatedAt = utcNow;
+            return;
+        }
+
+        if (Status == Enums.TaskStatus.InProgress && newStatus == Enums.TaskStatus.Todo)
+        {
+            Status = newStatus;
+            UpdatedAt = utcNow;
+            return;
+        }
+
+        throw new InvalidOperationException("Invalid task status transition.");
     }
 
     public Project Project { get; set; } = null!;

@@ -14,4 +14,6 @@ public class Project
 
     public Client Client { get; set; } = null!;
     public ICollection<TaskItem> TaskItems { get; set; } = new List<TaskItem>();
+
+    public bool CanAcceptNewTasks() => Status == ProjectStatus.Active;
 }

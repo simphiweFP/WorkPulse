@@ -42,10 +42,17 @@ public sealed class TaskService : ITaskService
 
     public async Task<TaskDto> CreateAsync(CreateTaskRequestDto request, CancellationToken cancellationToken = default)
     {
-        var projectExists = await _projectRepository.ExistsAsync(request.ProjectId, cancellationToken);
-        if (!projectExists)
+        ValidateEnums(request.Status, request.Priority);
+
+        var project = await _projectRepository.GetByIdAsync(request.ProjectId, cancellationToken);
+        if (project is null)
         {
             throw new NotFoundException($"Project '{request.ProjectId}' was not found.");
+        }
+
+        if (!project.CanAcceptNewTasks())
+        {
+            throw new ValidationException("Closed projects cannot receive new tasks.");
         }
 
         var now = _clock.UtcNow;
@@ -70,16 +77,23 @@ public sealed class TaskService : ITaskService
 
     public async Task UpdateAsync(Guid id, UpdateTaskRequestDto request, CancellationToken cancellationToken = default)
     {
+        ValidateEnums(request.Status, request.Priority);
+
         var existing = await _taskRepository.GetByIdAsync(id, cancellationToken);
         if (existing is null)
         {
             throw new NotFoundException($"Task '{id}' was not found.");
         }
 
-        var projectExists = await _projectRepository.ExistsAsync(request.ProjectId, cancellationToken);
-        if (!projectExists)
+        var project = await _projectRepository.GetByIdAsync(request.ProjectId, cancellationToken);
+        if (project is null)
         {
             throw new NotFoundException($"Project '{request.ProjectId}' was not found.");
+        }
+
+        if (!project.CanAcceptNewTasks())
+        {
+            throw new ValidationException("Closed projects cannot receive new tasks.");
         }
 
         await _taskRepository.UpdateAsync(new TaskItem
@@ -112,6 +126,11 @@ public sealed class TaskService : ITaskService
     public async Task AssignAsync(Guid id, AssignTaskRequestDto request, CancellationToken cancellationToken = default)
     {
         var task = await _taskRepository.GetByIdAsync(id, cancellationToken) ?? throw new NotFoundException($"Task '{id}' was not found.");
+        if (task.IsCompleted)
+        {
+            throw new ValidationException("Completed tasks cannot be reassigned.");
+        }
+
         var user = await _userRepository.GetByIdAsync(request.UserId, cancellationToken);
         if (user is null)
         {
@@ -124,8 +143,15 @@ public sealed class TaskService : ITaskService
             throw new ValidationException("Task can only be assigned to a Developer.");
         }
 
-        task.AssignedToUserId = request.UserId;
-        task.UpdatedAt = _clock.UtcNow;
+        try
+        {
+            task.AssignTo(request.UserId, _clock.UtcNow);
+        }
+        catch (InvalidOperationException ex)
+        {
+            throw new ValidationException(ex.Message);
+        }
+
         await _taskRepository.AssignAsync(id, request.UserId, cancellationToken);
     }
 
@@ -189,4 +215,17 @@ public sealed class TaskService : ITaskService
         ClientName = string.Empty,
         AssignedUserName = string.Empty
     };
+
+    private static void ValidateEnums(TaskStatus status, TaskPriority priority)
+    {
+        if (!Enum.IsDefined(status))
+        {
+            throw new ValidationException("Invalid task status.");
+        }
+
+        if (!Enum.IsDefined(priority))
+        {
+            throw new ValidationException("Invalid task priority.");
+        }
+    }
 }

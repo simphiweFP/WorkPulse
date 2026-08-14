@@ -1,6 +1,4 @@
-using System.Reflection;
 using Microsoft.Extensions.DependencyInjection;
-using WorkPulse.Application;
 using WorkPulse.Web.API.Controllers;
 
 namespace WorkPulse.Web.API.DependencyInjection;
@@ -14,7 +12,6 @@ public static class ServiceCollectionExtensions
         mvcBuilder.AddApplicationPart(typeof(ClientsController).Assembly);
         mvcBuilder.AddApplicationPart(typeof(ProjectsController).Assembly);
         mvcBuilder.AddApplicationPart(typeof(TasksController).Assembly);
-        services.AddApplication();
         return services;
     }
 }
