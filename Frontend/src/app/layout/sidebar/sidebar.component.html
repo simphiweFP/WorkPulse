@@ -1,0 +1,20 @@
+<aside class="sidebar">
+  <h1>WorkPulse</h1>
+
+  @if (currentUser$ | async; as user) {
+    <div class="user-block">
+      <p>{{ user.firstName }} {{ user.lastName }}</p>
+      <small>{{ user.role }}</small>
+    </div>
+  }
+
+  @if (currentUser$ | async; as user) {
+    <nav>
+      @for (item of navigationItems(user); track item.path) {
+        <a [routerLink]="item.path">{{ item.label }}</a>
+      }
+    </nav>
+  }
+
+  <button type="button" (click)="logout()">Logout</button>
+</aside>

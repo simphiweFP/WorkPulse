@@ -1,8 +1,8 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { BehaviorSubject, Observable, map, tap } from 'rxjs';
-import { apiConfig } from '../config/api.config';
-import { AuthResponse, LoginRequest, RegisterRequest, User } from '../../shared/models/auth.models';
+import { apiConfig } from '../services/api.config';
+import { AuthResponse, LoginRequest, RegisterRequest, User } from '../models/auth.models';
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
