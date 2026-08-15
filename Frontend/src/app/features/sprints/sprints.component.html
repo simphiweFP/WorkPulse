@@ -1,0 +1,100 @@
+ <section class="screen sprints-screen">
+  @if (loading()) {
+    <app-loading-state message="Loading sprint information..." />
+  } @else if (error()) {
+    <app-error-state title="Sprints unavailable" [message]="error()" actionLabel="Try Again" [retry]="loadSprints.bind(this)" />
+  } @else {
+    <app-page-header eyebrow="Sprints" title="Sprints" subtitle="Create, edit, and review delivery windows for the current work." />
+
+    <div class="toolbar">
+      <button type="button" (click)="openCreateSprint()">+ New Sprint</button>
+    </div>
+
+    @if (sprints().length) {
+      <div class="table-card panel">
+        <table>
+          <thead>
+            <tr>
+              <th>Sprint</th>
+              <th>Dates</th>
+              <th>Status</th>
+              <th>Tasks</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (sprint of sprints(); track sprint.id) {
+              <tr>
+                <td class="table-title">{{ sprint.name }}</td>
+                <td>{{ sprint.startDate | date:'mediumDate' }} - {{ sprint.endDate | date:'mediumDate' }}</td>
+                <td><span class="badge badge--info">{{ sprint.status }}</span></td>
+                <td>{{ sprint.completedTaskCount }} / {{ sprint.taskCount }}</td>
+                <td class="row-actions">
+                  <button type="button" class="secondary" (click)="selectSprint(sprint)">Edit</button>
+                  <button type="button" class="danger" (click)="removeSprint(sprint.id)">Delete</button>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    } @else {
+      <app-empty-state title="No sprints yet." message="Create the first sprint so demo data has a clear delivery window." />
+    }
+
+    @if (modalOpen()) {
+      <div class="modal-backdrop" (click)="closeModal()"></div>
+      <section class="modal panel" role="dialog" aria-modal="true" aria-label="Create or edit sprint">
+        <div class="modal__header">
+          <div>
+            <p class="eyebrow">Sprints</p>
+            <h2>{{ selectedSprintId() ? 'Edit Sprint' : 'New Sprint' }}</h2>
+          </div>
+          <button type="button" class="secondary" (click)="closeModal()">Close</button>
+        </div>
+
+        <form class="form-grid modal__form" [formGroup]="form" (ngSubmit)="saveSprint()">
+          @if (formError()) {
+            <div class="field-error full-width">{{ formError() }}</div>
+          }
+          <label class="full-width">
+            <span>Sprint Name *</span>
+            <input formControlName="name" />
+            @if (form.controls.name.touched && form.controls.name.invalid) {
+              <small class="field-error">Sprint name is required.</small>
+            }
+          </label>
+          <label>
+            <span>Start Date *</span>
+            <input type="date" formControlName="startDate" />
+            @if (form.controls.startDate.touched && form.controls.startDate.invalid) {
+              <small class="field-error">Start date is required.</small>
+            }
+          </label>
+          <label>
+            <span>End Date *</span>
+            <input type="date" formControlName="endDate" />
+            @if (form.controls.endDate.touched && form.controls.endDate.invalid) {
+              <small class="field-error">End date is required.</small>
+            }
+          </label>
+          <label>
+            <span>Status *</span>
+            <select formControlName="status">
+              <option value="Planned">Planned</option>
+              <option value="Active">Active</option>
+              <option value="Completed">Completed</option>
+            </select>
+            @if (form.controls.status.touched && form.controls.status.invalid) {
+              <small class="field-error">Status is required.</small>
+            }
+          </label>
+          <div class="actions full-width">
+            <button type="button" class="secondary" (click)="closeModal()">Cancel</button>
+            <button type="submit" [disabled]="submitting()">{{ submitting() ? 'Saving...' : (selectedSprintId() ? 'Update Sprint' : 'Create Sprint') }}</button>
+          </div>
+        </form>
+      </section>
+    }
+  }
+</section>

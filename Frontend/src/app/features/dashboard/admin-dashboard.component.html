@@ -1,0 +1,183 @@
+<section class="admin-dashboard">
+  @if (loading()) {
+    <app-loading-state message="Loading admin dashboard..." />
+  } @else if (error()) {
+    <section class="error-state">
+      <h2>Dashboard unavailable</h2>
+      <p>{{ error() }}</p>
+    </section>
+  } @else if (dashboard(); as model) {
+    <app-page-header
+      eyebrow="Admin Portal · Dashboard"
+      [title]='greeting() + ", " + greetingName() + " — company snapshot"'
+      subtitle="A compact view of delivery health, team load, and current pressure points."
+      meta="Live"
+    />
+
+    <section class="hero-card panel">
+      <div class="hero-card__copy">
+        <p class="section-eyebrow">Today at a glance</p>
+        <h2>See the company in one quick scan.</h2>
+        <p>Clients, projects, and team load stay visible without making the page feel heavy.</p>
+      </div>
+
+      <div class="hero-card__metrics">
+        <article>
+          <span>Active clients</span>
+          <strong>{{ model.summary.clients }}</strong>
+        </article>
+        <article>
+          <span>Active projects</span>
+          <strong>{{ model.summary.projects }}</strong>
+        </article>
+        <article>
+          <span>Overdue</span>
+          <strong>{{ model.taskOverview.overdue }}</strong>
+        </article>
+        <article>
+          <span>In progress</span>
+          <strong>{{ model.taskOverview.inProgress }}</strong>
+        </article>
+      </div>
+
+      <div class="hero-card__foot">
+        <div><strong>{{ model.taskOverview.completed }}</strong><span>Completed</span></div>
+        <div><strong>{{ model.summary.teamMembers }}</strong><span>Team members</span></div>
+        <div><strong>{{ model.priorityBreakdown.critical + model.priorityBreakdown.high }}</strong><span>Priority work</span></div>
+      </div>
+    </section>
+
+    <section class="dashboard-grid">
+      <article class="panel panel--compact">
+        <div class="section-header">
+          <div>
+            <p class="section-eyebrow">Portfolio health</p>
+            <h2>Delivery pressure</h2>
+          </div>
+        </div>
+        <div class="compact-list compact-list--tight">
+          <div class="compact-list__item">
+            <div>
+              <strong>{{ model.taskOverview.overdue }}</strong>
+              <p>Overdue tasks</p>
+            </div>
+            <span>Needs action</span>
+          </div>
+          <div class="compact-list__item">
+            <div>
+              <strong>{{ model.priorityBreakdown.critical }}</strong>
+              <p>Critical items</p>
+            </div>
+            <span>Highest risk</span>
+          </div>
+          <div class="compact-list__item">
+            <div>
+              <strong>{{ model.taskOverview.inProgress }}</strong>
+              <p>In progress</p>
+            </div>
+            <span>Active work</span>
+          </div>
+        </div>
+      </article>
+
+      <article class="panel panel--compact">
+        <div class="section-header">
+          <div>
+            <p class="section-eyebrow">Workload Balance</p>
+            <h2>Developer capacity</h2>
+          </div>
+        </div>
+        @if (teamWorkload().length) {
+          <div class="workload-list">
+            @for (developer of teamWorkload(); track developer.id) {
+              <div class="workload-row">
+                <div>
+                  <strong>{{ developer.firstName }} {{ developer.lastName }}</strong>
+                  <p>{{ developer.email || 'Developer' }}</p>
+                </div>
+                <div class="workload-row__bar">
+                  <div class="workload-row__fill" [style.width.%]="percentOf(model.summary.teamMembers, developer.activeTaskCount ?? 0)"></div>
+                </div>
+                <span>{{ developerLoadLabel(developer.activeTaskCount) }}</span>
+              </div>
+            }
+          </div>
+        } @else {
+          <app-empty-state title="No team data" message="Developer workload data is not currently available." />
+        }
+      </article>
+
+      <article class="panel panel--compact">
+        <div class="section-header">
+          <div>
+            <p class="section-eyebrow">Top Priorities</p>
+            <h2>Critical and high work</h2>
+          </div>
+        </div>
+        @if (topPriorities().length) {
+          <div class="compact-list">
+            @for (task of topPriorities(); track task.id) {
+              <div class="compact-list__item">
+                <div>
+                  <strong>{{ task.title }}</strong>
+                  <p>{{ task.clientName }} · {{ task.projectName }}</p>
+                </div>
+                <span>{{ task.priority }}</span>
+              </div>
+            }
+          </div>
+        } @else {
+          <app-empty-state title="No urgent tasks" message="There are no critical or high-priority tasks in the current snapshot." />
+        }
+      </article>
+
+      <article class="panel panel--compact">
+        <div class="section-header">
+          <div>
+            <p class="section-eyebrow">Upcoming Deadlines</p>
+            <h2>Near-term delivery pressure</h2>
+          </div>
+        </div>
+        @if (upcomingDeadlines().length) {
+          <div class="deadline-list">
+            @for (task of upcomingDeadlines(); track task.id) {
+              <div class="deadline-item">
+                <div>
+                  <strong>{{ task.title }}</strong>
+                  <p>{{ task.clientName }} · {{ task.projectName }}</p>
+                </div>
+                <span>{{ formatDate(task.deadline ?? undefined) }}</span>
+              </div>
+            }
+          </div>
+        } @else {
+          <app-empty-state title="No upcoming deadlines" message="No deadline data is available in the current snapshot." />
+        }
+      </article>
+
+      <article class="panel panel--wide">
+        <div class="section-header">
+          <div>
+            <p class="section-eyebrow">Recent Activity</p>
+            <h2>What changed recently</h2>
+          </div>
+        </div>
+        @if (sortedRecentTasks().length) {
+          <div class="activity-list">
+            @for (task of sortedRecentTasks().slice(0, 6); track task.id) {
+              <div class="activity-item">
+                <div>
+                  <strong>{{ task.title }}</strong>
+                  <p>{{ task.clientName }} · {{ task.projectName }}</p>
+                </div>
+                <span>{{ task.status }}</span>
+              </div>
+            }
+          </div>
+        } @else {
+          <app-empty-state title="No recent activity" message="Recent activity will appear here once tasks move through the workflow." />
+        }
+      </article>
+    </section>
+  }
+</section>

@@ -7,6 +7,10 @@ export const tasksRoutes: Routes = [
     loadComponent: () => import('./tasks.component').then((component) => component.TasksComponent)
   },
   {
+    path: ':id',
+    loadComponent: () => import('./task-detail.component').then((component) => component.TaskDetailComponent)
+  },
+  {
     path: 'my-tasks',
     canActivate: [roleGuard],
     data: { role: 'Developer' },

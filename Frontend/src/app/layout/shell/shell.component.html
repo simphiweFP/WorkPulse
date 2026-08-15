@@ -1,8 +1,10 @@
-<div class="layout-shell">
-  <app-sidebar />
-
-  <main class="content">
-    <app-navbar />
-    <router-outlet></router-outlet>
-  </main>
+<div class="shell-layout" [class.shell-layout--drawer-open]="drawerOpen()">
+  <app-sidebar [open]="drawerOpen()" (closeDrawer)="closeDrawer()" />
+  <div class="shell-main">
+    <app-navbar (menuToggle)="toggleDrawer()" (closeDrawer)="closeDrawer()" />
+    <div class="shell-backdrop" [class.is-open]="drawerOpen()" (click)="closeDrawer()"></div>
+    <main class="shell-content">
+      <router-outlet></router-outlet>
+    </main>
+  </div>
 </div>

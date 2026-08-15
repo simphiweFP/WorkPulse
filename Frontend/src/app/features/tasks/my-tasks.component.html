@@ -1,0 +1,97 @@
+<section class="screen tasks-screen">
+  <app-page-header eyebrow="Work Queue" [title]="pageTitle()" [subtitle]="pageSubtitle()" />
+
+  @if (loading()) {
+    <app-loading-state message="Loading your tasks..." />
+  } @else if (error()) {
+    <app-error-state title="Tasks unavailable" [message]="error()" actionLabel="Try Again" [retry]="loadTasks.bind(this)" />
+  } @else {
+    @if (notice()) {
+      <section class="inline-notice">{{ notice() }}</section>
+    }
+
+    <section class="tabs tabs--density-ready">
+      <button type="button" [class.is-active]="activeTab() === 'active'" (click)="setTab('active')">Active</button>
+      <button type="button" [class.is-active]="activeTab() === 'backlog'" (click)="setTab('backlog')">Backlog</button>
+      <button type="button" [class.is-active]="activeTab() === 'completed'" (click)="setTab('completed')">Completed</button>
+    </section>
+
+    <section class="panel filters form-grid filters--density-ready" [formGroup]="filters">
+      <label><input placeholder="Search" formControlName="search" /></label>
+      <label>
+        <select formControlName="priority">
+          <option value="">Priority</option>
+          <option value="Low">Low</option>
+          <option value="Medium">Medium</option>
+          <option value="High">High</option>
+          <option value="Critical">Critical</option>
+        </select>
+      </label>
+      <div class="actions full-width">
+        <button type="button" class="secondary" (click)="applyFilters()">Apply Filters</button>
+        <button type="button" class="secondary" (click)="resetFilters()">Reset</button>
+      </div>
+    </section>
+
+    @if (visibleTasks().length) {
+      <div class="table-card">
+        <table>
+          <thead>
+            <tr>
+              <th>Task</th>
+              <th>Project</th>
+              <th>Sprint</th>
+              <th>Priority</th>
+              <th>Due Date</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (task of visibleTasks(); track task.taskId) {
+              <tr>
+                <td>
+                  <div class="table-title">{{ task.title }}</div>
+                  <small>{{ taskReason(task) }}</small>
+                </td>
+                <td>{{ task.projectName }}</td>
+                <td>{{ task.sprintName ?? 'Backlog' }}</td>
+                <td><app-priority-badge [priority]="task.priority" /></td>
+                <td>{{ task.deadline | date:'mediumDate' }}</td>
+                <td><app-status-badge [status]="task.status" /></td>
+                <td class="row-actions">
+                  <button type="button" class="secondary" (click)="performTaskAction(task)">{{ task.actionLabel ?? 'View' }}</button>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <div class="mobile-record-list">
+        @for (task of visibleTasks(); track task.taskId) {
+          <article class="mobile-record panel">
+            <div class="mobile-record__header">
+              <div>
+                <h3>{{ task.title }}</h3>
+                <p>{{ task.projectName }}</p>
+              </div>
+              <app-priority-badge [priority]="task.priority" />
+            </div>
+            <div class="mobile-record__meta mobile-record__meta--stacked">
+              <div><span>Due Date</span><strong>{{ task.deadline | date:'mediumDate' }}</strong></div>
+              <div><span>Sprint</span><strong>{{ task.sprintName ?? 'Backlog' }}</strong></div>
+              <div><span>Status</span><strong><app-status-badge [status]="task.status" /></strong></div>
+            </div>
+            <p class="task-note">{{ taskReason(task) }}</p>
+            <div class="mobile-record__actions mobile-record__actions--wrap">
+              <button type="button" class="secondary" (click)="performTaskAction(task)">{{ task.actionLabel ?? 'View' }}</button>
+            </div>
+          </article>
+        }
+      </div>
+    } @else {
+      <app-empty-state title="Nothing here yet." [message]="activeTab() === 'completed' ? 'Completed work will appear here.' : 'No assigned tasks match the current filters.'" />
+    }
+  }
+</section>

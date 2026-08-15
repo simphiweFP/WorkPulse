@@ -9,5 +9,6 @@ export const authenticatedNavigation: NavigationItem[] = [
   { label: 'Projects', path: '/projects' },
   { label: 'Tasks', path: '/tasks' },
   { label: 'My Tasks', path: '/my-tasks' },
-  { label: 'Users', path: '/users' }
+  { label: 'Team', path: '/team' },
+  { label: 'Profile', path: '/profile' }
 ];

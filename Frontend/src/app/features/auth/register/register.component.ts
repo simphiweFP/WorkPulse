@@ -2,7 +2,10 @@ import { CommonModule } from '@angular/common';
 import { Component } from '@angular/core';
 import { AbstractControl, FormBuilder, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
+import { finalize, timeout } from 'rxjs';
 import { AuthService } from '../../../core/auth/auth.service';
+import { RegisterRequest } from '../../../core/models/auth.models';
+import { getAuthErrorMessage } from '../auth-error.util';
 
 function passwordsMatchValidator(group: AbstractControl): ValidationErrors | null {
   const password = group.get('password')?.value;
@@ -20,6 +23,7 @@ function passwordsMatchValidator(group: AbstractControl): ValidationErrors | nul
 })
 export class RegisterComponent {
   isSubmitting = false;
+  submissionFailed = false;
   errorMessage = '';
   readonly form;
 
@@ -54,19 +58,41 @@ export class RegisterComponent {
     }
 
     this.isSubmitting = true;
+    this.submissionFailed = false;
     this.errorMessage = '';
 
-    this.authService.register(this.form.getRawValue() as any).subscribe({
-      next: () => {
-        this.router.navigate(['/dashboard']);
-      },
-      error: (error) => {
-        this.errorMessage = error?.error?.message ?? 'Registration failed.';
-        this.isSubmitting = false;
-      },
-      complete: () => {
-        this.isSubmitting = false;
-      }
-    });
+    const request = this.form.getRawValue() as RegisterRequest;
+    this.authService
+      .register(request)
+      .pipe(
+        timeout({ first: 15000 }),
+        finalize(() => (this.isSubmitting = false))
+      )
+      .subscribe({
+        next: () => {
+          this.router.navigate(['/dashboard']);
+        },
+        error: (error) => {
+          this.submissionFailed = true;
+          this.errorMessage = getAuthErrorMessage(error, 'Registration failed.');
+        }
+      });
+  }
+
+  fieldInvalid(name: 'firstName' | 'lastName' | 'email' | 'password' | 'confirmPassword'): boolean {
+    const control = this.form.controls[name];
+    return control.touched && control.invalid;
+  }
+
+  get passwordsMismatch(): boolean {
+    return this.form.touched && !!this.form.errors?.['passwordMismatch'];
+  }
+
+  get submitLabel(): string {
+    if (this.isSubmitting) {
+      return 'Registering…';
+    }
+
+    return this.submissionFailed ? 'Try again' : 'Register';
   }
 }

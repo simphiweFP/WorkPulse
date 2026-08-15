@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, signal } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 import { NavbarComponent } from '../navbar/navbar.component';
 import { SidebarComponent } from '../sidebar/sidebar.component';
@@ -10,4 +10,14 @@ import { SidebarComponent } from '../sidebar/sidebar.component';
   templateUrl: './shell.component.html',
   styleUrl: './shell.component.scss'
 })
-export class ShellComponent {}
+export class ShellComponent {
+  readonly drawerOpen = signal(false);
+
+  toggleDrawer(): void {
+    this.drawerOpen.update((open) => !open);
+  }
+
+  closeDrawer(): void {
+    this.drawerOpen.set(false);
+  }
+}

@@ -1,4 +1,217 @@
 .sidebar {
+  width: var(--wp-sidebar-width);
+  min-height: 100vh;
+  padding: 16px 12px 12px;
+  background: linear-gradient(180deg, var(--wp-sidebar) 0%, #081a35 100%);
+  color: #e2e8f0;
   display: flex;
   flex-direction: column;
+  gap: 12px;
+  position: sticky;
+  top: 0;
+}
+
+.sidebar__close {
+  display: none;
+}
+
+.sidebar__brand,
+.sidebar__identity,
+.sidebar__nav,
+.sidebar__panel {
+  border-radius: 18px;
+}
+
+.sidebar__brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 8px 8px;
+}
+
+.sidebar__mark {
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  background: radial-gradient(circle at 50% 50%, #7dd3fc 0 18%, transparent 20%), linear-gradient(90deg, #60a5fa, #8b5cf6);
+  position: relative;
+}
+
+.sidebar__mark::after {
+  content: '';
+  position: absolute;
+  inset: 50% auto auto 38px;
+  width: 26px;
+  height: 2px;
+  background: rgba(148, 163, 184, 0.4);
+  box-shadow: 0 -5px 0 rgba(148, 163, 184, 0.2), 0 5px 0 rgba(148, 163, 184, 0.2);
+}
+
+.sidebar__brand h1,
+.sidebar__identity strong,
+.sidebar__panel strong {
+  margin: 0;
+}
+
+.sidebar__brand h1 {
+  font-size: 24px;
+  color: #fff;
+}
+
+.sidebar__brand p,
+.sidebar__panel p,
+.sidebar__section {
+  color: rgba(226, 232, 240, 0.7);
+}
+
+.sidebar__identity {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+  border-radius: 14px;
+  background: rgba(15, 23, 42, 0.42);
+  border: 1px solid rgba(148, 163, 184, 0.14);
+}
+
+.sidebar__identity strong {
+  display: block;
+  font-size: 14px;
+  line-height: 1;
+}
+
+.sidebar__identity small {
+  color: rgba(226, 232, 240, 0.72);
+  font-size: 12px;
+}
+
+.sidebar__avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(135deg, #4f46e5, #06b6d4);
+  color: #fff;
+  font-weight: 700;
+  font-size: 13px;
+}
+
+.sidebar__nav {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.sidebar__nav a,
+.sidebar__logout {
+  min-height: 34px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+  font-size: 13px;
+  color: #e2e8f0;
+  background: transparent;
+}
+
+.sidebar__nav a.is-active,
+.sidebar__nav a:hover,
+.sidebar__logout:hover {
+  background: rgba(79, 70, 229, 0.18);
+  color: #fff;
+}
+
+.sidebar__section {
+  margin: 8px 0 2px;
+  padding: 0 10px;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.sidebar__logout {
+  width: 100%;
+  justify-content: flex-start;
+  background: transparent;
+}
+
+.sidebar__panel {
+  margin-top: auto;
+  padding: 14px;
+  background: linear-gradient(180deg, rgba(30, 41, 59, 0.85), rgba(15, 23, 42, 0.95));
+  border: 1px solid rgba(148, 163, 184, 0.12);
+  display: grid;
+  gap: 8px;
+}
+
+.sidebar__panel strong {
+  display: block;
+  color: #fff;
+  font-size: 14px;
+}
+
+.sidebar__panel p {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.sidebar__panel-illustration {
+  height: 72px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, rgba(79, 70, 229, 0.35), rgba(14, 165, 233, 0.22));
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.sidebar__panel small {
+  color: rgba(226, 232, 240, 0.62);
+  font-size: 11px;
+}
+
+@media (max-width: 1100px) {
+  .sidebar {
+    width: min(320px, calc(100vw - 48px));
+    min-height: 100vh;
+    position: fixed;
+    inset: 0 auto 0 0;
+    z-index: 30;
+    transform: translateX(-105%);
+    transition: transform .2s ease;
+    border-radius: 0 24px 24px 0;
+    box-shadow: 18px 0 48px rgba(15, 23, 42, 0.25);
+  }
+
+  .sidebar--open {
+    transform: translateX(0);
+  }
+
+  .sidebar__panel { display: none; }
+
+  .sidebar__close {
+    display: inline-flex;
+    margin-left: auto;
+    width: 40px;
+    height: 40px;
+    border-radius: 999px;
+    background: rgba(255,255,255,0.08);
+    color: #fff;
+  }
+}
+
+@media (max-width: 720px) {
+  .sidebar {
+    padding: 18px 14px 14px;
+    gap: 14px;
+  }
+
+  .sidebar__brand {
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+
+  .sidebar__nav a,
+  .sidebar__logout {
+    min-height: 40px;
+  }
 }

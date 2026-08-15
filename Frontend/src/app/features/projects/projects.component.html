@@ -1,0 +1,138 @@
+<section class="screen">
+  <app-page-header eyebrow="Projects" title="Projects" subtitle="Track project health and the work attached to each client." />
+
+  @if (loading()) {
+    <app-loading-state message="Loading projects..." />
+  } @else if (error()) {
+    <app-error-state title="Projects unavailable" [message]="error()" actionLabel="Try Again" [retry]="loadData.bind(this)" />
+  } @else {
+    <div class="list-toolbar">
+      <label class="list-search">
+        <span class="sr-only">Search projects</span>
+        <input type="search" placeholder="Search" [value]="search()" (input)="search.set($any($event.target).value)" />
+      </label>
+      <button type="button" (click)="openCreateProject()">+ New Project</button>
+    </div>
+
+    @if (filteredProjects().length) {
+      <div class="table-card">
+        <table>
+          <thead>
+            <tr>
+              <th>Project</th>
+              <th>Client</th>
+              <th>Progress</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (project of filteredProjects(); track project.id) {
+              <tr>
+                <td>
+                  <div class="table-title">{{ project.name }}</div>
+                </td>
+                <td>{{ project.clientName }}</td>
+                <td>
+                  <div class="progress-cell">
+                    <div class="progress-track"><span [style.width.%]="project.openTasks + project.completedTasks ? (project.completedTasks / (project.openTasks + project.completedTasks)) * 100 : 0"></span></div>
+                    <small>{{ project.completedTasks }} / {{ project.openTasks + project.completedTasks }}</small>
+                  </div>
+                </td>
+                <td><span class="badge badge--info">{{ project.status }}</span></td>
+                <td class="row-actions">
+                  <button type="button" class="secondary" (click)="selectProject(project)">Edit</button>
+                  <button type="button" class="danger" (click)="removeProject(project.id)">Delete</button>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <div class="mobile-record-list">
+        @for (project of filteredProjects(); track project.id) {
+          <article class="mobile-record panel">
+            <div class="mobile-record__header">
+              <div>
+                <h3>{{ project.name }}</h3>
+                <p>{{ project.clientName }}</p>
+              </div>
+              <span class="badge badge--info">{{ project.status }}</span>
+            </div>
+            <div class="mobile-record__meta">
+              <div><span>Open Tasks</span><strong>{{ project.openTasks }}</strong></div>
+              <div><span>Completed</span><strong>{{ project.completedTasks }}</strong></div>
+            </div>
+            <div class="mobile-record__actions">
+              <button type="button" class="secondary" (click)="selectProject(project)">Edit</button>
+              <button type="button" class="secondary" (click)="removeProject(project.id)">Delete</button>
+            </div>
+          </article>
+        }
+      </div>
+    } @else {
+      <app-empty-state title="No projects yet." message="Add the first project to begin tracking delivery." />
+    }
+
+    @if (modalOpen()) {
+      <div class="modal-backdrop" (click)="closeModal()"></div>
+      <section class="modal panel" role="dialog" aria-modal="true" aria-label="Create or edit project">
+        <div class="modal__header">
+          <div>
+            <p class="eyebrow">Projects</p>
+            <h2>{{ selectedProjectId() ? 'Edit Project' : 'New Project' }}</h2>
+          </div>
+          <button type="button" class="secondary" (click)="closeModal()">Close</button>
+        </div>
+
+        <form class="form-grid modal__form" [formGroup]="form" (ngSubmit)="saveProject()">
+          @if (formError()) {
+            <div class="field-error full-width">{{ formError() }}</div>
+          }
+          <label>
+            <span>Project *</span>
+            <input formControlName="name" />
+            @if (form.controls.name.touched && form.controls.name.invalid) {
+              <small class="field-error">Project name is required.</small>
+            }
+          </label>
+          <label>
+            <span>Client *</span>
+            <select formControlName="clientId">
+              <option value="">Select client</option>
+              @for (client of clients(); track client.id) {
+                <option [value]="client.id">{{ client.name }}</option>
+              }
+            </select>
+            @if (form.controls.clientId.touched && form.controls.clientId.invalid) {
+              <small class="field-error">Client is required.</small>
+            }
+          </label>
+          <label>
+            <span>Status *</span>
+            <select formControlName="status">
+              <option value="Active">Active</option>
+              <option value="Completed">Completed</option>
+              <option value="Archived">Archived</option>
+            </select>
+            @if (form.controls.status.touched && form.controls.status.invalid) {
+              <small class="field-error">Status is required.</small>
+            }
+          </label>
+          <label class="full-width">
+            <span>Description *</span>
+            <textarea rows="4" formControlName="description"></textarea>
+            @if (form.controls.description.touched && form.controls.description.invalid) {
+              <small class="field-error">Description is required.</small>
+            }
+          </label>
+          <div class="actions full-width">
+            <button type="button" class="secondary" (click)="closeModal()">Cancel</button>
+            <button type="submit" [disabled]="submitting()">{{ submitting() ? 'Saving...' : (selectedProjectId() ? 'Update Project' : 'Create Project') }}</button>
+          </div>
+        </form>
+      </section>
+    }
+  }
+</section>

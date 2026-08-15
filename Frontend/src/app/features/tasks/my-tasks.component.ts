@@ -1,99 +1,50 @@
-import { CommonModule, DatePipe, LowerCasePipe } from '@angular/common';
+import { CommonModule } from '@angular/common';
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
 import { catchError, finalize, of } from 'rxjs';
 import { TaskRecommendation } from '../../shared/models/task.models';
 import { TaskService } from '../../core/services/task.service';
 import { EmptyStateComponent } from '../../shared/components/empty-state/empty-state.component';
+import { ErrorStateComponent } from '../../shared/components/error-state/error-state.component';
 import { LoadingStateComponent } from '../../shared/components/loading-state/loading-state.component';
 import { PageHeaderComponent } from '../../shared/components/page-header/page-header.component';
+import { PriorityBadgeComponent } from '../../shared/components/priority-badge/priority-badge.component';
+import { StatusBadgeComponent } from '../../shared/components/status-badge/status-badge.component';
 
 @Component({
   selector: 'app-my-tasks',
   standalone: true,
-  imports: [CommonModule, DatePipe, LowerCasePipe, ReactiveFormsModule, PageHeaderComponent, LoadingStateComponent, EmptyStateComponent],
-  template: `
-    <section class="screen">
-      <app-page-header eyebrow="My Tasks" title="My Tasks" subtitle="View and progress the work assigned to you." />
-
-      @if (loading()) {
-        <app-loading-state message="Loading your tasks..." />
-      } @else if (error()) {
-        <section class="error-state"><p>{{ error() }}</p></section>
-      } @else {
-        <section class="panel filters form-grid" [formGroup]="filters">
-          <label><input placeholder="Search" formControlName="search" /></label>
-          <label>
-            <select formControlName="status">
-              <option value="">Status</option>
-              <option value="Todo">Todo</option>
-              <option value="InProgress">In Progress</option>
-              <option value="Completed">Completed</option>
-            </select>
-          </label>
-          <label>
-            <select formControlName="priority">
-              <option value="">Priority</option>
-              <option value="Low">Low</option>
-              <option value="Medium">Medium</option>
-              <option value="High">High</option>
-              <option value="Critical">Critical</option>
-            </select>
-          </label>
-          <div class="actions full-width">
-            <button type="button" class="secondary" (click)="applyFilters()">Apply Filters</button>
-            <button type="button" class="secondary" (click)="resetFilters()">Reset</button>
-          </div>
-        </section>
-
-        @if (tasks().length) {
-          <div class="task-list">
-            @for (task of tasks(); track task.taskId) {
-              <article class="task-card">
-                <div class="task-card__header">
-                  <div>
-                    <h3>{{ task.title }}</h3>
-                    <p>{{ task.clientName }} / {{ task.projectName }}</p>
-                  </div>
-                  <span class="priority priority-{{ task.priority | lowercase }}">{{ task.priority }}</span>
-                </div>
-                <div class="task-card__meta">
-                  <span>{{ task.status }}</span>
-                  <span>{{ task.deadline | date:'mediumDate' }}</span>
-                </div>
-                <p class="reason">{{ task.reason }}</p>
-                <div class="task-card__actions">
-                  @if (task.status === 'Todo') {
-                    <button type="button" (click)="startTask(task.taskId)">Start</button>
-                  }
-                  @if (task.status === 'InProgress') {
-                    <button type="button" (click)="completeTask(task.taskId)">Complete</button>
-                  }
-                  <button type="button" class="secondary" (click)="viewTask(task)">View</button>
-                </div>
-              </article>
-            }
-          </div>
-        } @else {
-          <app-empty-state title="You're clear for today." message="No assigned tasks need your attention right now." />
-        }
-      }
-    </section>
-  `
+  imports: [CommonModule, ReactiveFormsModule, PageHeaderComponent, LoadingStateComponent, EmptyStateComponent, ErrorStateComponent, PriorityBadgeComponent, StatusBadgeComponent],
+  templateUrl: './my-tasks.component.html',
+  styleUrl: './my-tasks.component.scss'
 })
 export class MyTasksComponent implements OnInit {
   private readonly taskService = inject(TaskService);
   private readonly fb = inject(FormBuilder);
+  private readonly router = inject(Router);
 
   readonly tasks = signal<TaskRecommendation[]>([]);
   readonly sourceTasks = signal<TaskRecommendation[]>([]);
   readonly loading = signal(true);
   readonly error = signal('');
+  readonly notice = signal('');
+  readonly activeTab = signal<'active' | 'backlog' | 'completed'>(this.router.url.includes('/backlog') ? 'backlog' : 'active');
+
   readonly filters = this.fb.group({
     search: [''],
-    status: [''],
     priority: ['']
   });
+
+  pageTitle(): string {
+    return this.router.url.includes('/backlog') ? 'Backlog' : 'My Tasks';
+  }
+
+  pageSubtitle(): string {
+    return this.router.url.includes('/backlog')
+      ? 'Work that is still in backlog and not assigned to a sprint yet.'
+      : 'View and progress the work assigned to you.';
+  }
 
   ngOnInit(): void {
     this.loadTasks();
@@ -101,11 +52,13 @@ export class MyTasksComponent implements OnInit {
 
   loadTasks(): void {
     this.loading.set(true);
+    this.error.set('');
+    this.notice.set('');
     this.taskService
       .getMyTasks()
       .pipe(
         catchError(() => {
-          this.error.set('Unable to load your tasks.');
+          this.error.set('We could not load your tasks right now. Please try again in a moment.');
           return of([] as TaskRecommendation[]);
         }),
         finalize(() => this.loading.set(false))
@@ -113,34 +66,92 @@ export class MyTasksComponent implements OnInit {
       .subscribe((tasks) => {
         this.sourceTasks.set(tasks);
         this.tasks.set(tasks);
+        this.applyFilters();
       });
   }
 
+  setTab(tab: 'active' | 'backlog' | 'completed'): void {
+    this.activeTab.set(tab);
+    this.applyFilters();
+  }
+
   applyFilters(): void {
-    const { search, status, priority } = this.filters.getRawValue();
+    const { search, priority } = this.filters.getRawValue();
     const filtered = this.sourceTasks().filter((task) => {
+      const matchesTab = this.matchesTab(task);
       const matchesSearch = !search || `${task.title} ${task.clientName} ${task.projectName}`.toLowerCase().includes(search.toLowerCase());
-      const matchesStatus = !status || task.status === status;
       const matchesPriority = !priority || task.priority === priority;
-      return matchesSearch && matchesStatus && matchesPriority;
+      return matchesTab && matchesSearch && matchesPriority;
     });
     this.tasks.set(filtered);
   }
 
   resetFilters(): void {
     this.filters.reset();
-    this.tasks.set(this.sourceTasks());
+    this.activeTab.set(this.router.url.includes('/backlog') ? 'backlog' : 'active');
+    this.applyFilters();
+  }
+
+  performTaskAction(task: TaskRecommendation): void {
+    if (task.status === 'Todo') {
+      this.startTask(task.taskId);
+      return;
+    }
+
+    if (task.status === 'InProgress') {
+      this.completeTask(task.taskId);
+      return;
+    }
+
+    this.viewTask(task);
   }
 
   startTask(taskId: string): void {
-    this.taskService.startTask(taskId).subscribe(() => this.loadTasks());
+    this.notice.set('');
+    this.taskService
+      .startTask(taskId)
+      .pipe(
+        catchError(() => {
+          this.notice.set('We could not start that task just now. Please try again.');
+          return of(null);
+        })
+      )
+      .subscribe(() => this.loadTasks());
   }
 
   completeTask(taskId: string): void {
-    this.taskService.completeTask(taskId).subscribe(() => this.loadTasks());
+    this.notice.set('');
+    this.taskService
+      .completeTask(taskId)
+      .pipe(
+        catchError(() => {
+          this.notice.set('We could not complete that task just now. Please try again.');
+          return of(null);
+        })
+      )
+      .subscribe(() => this.loadTasks());
   }
 
   viewTask(task: TaskRecommendation): void {
     void task;
+  }
+
+  visibleTasks(): TaskRecommendation[] {
+    return this.tasks();
+  }
+
+  taskReason(task: TaskRecommendation): string {
+    return task.reason?.trim() || 'No delivery note provided.';
+  }
+
+  private matchesTab(task: TaskRecommendation): boolean {
+    switch (this.activeTab()) {
+      case 'completed':
+        return task.status === 'Completed';
+      case 'backlog':
+        return task.status === 'Todo' && (task.sprintId == null || task.sprintName === 'Backlog');
+      default:
+        return task.status !== 'Completed';
+    }
   }
 }

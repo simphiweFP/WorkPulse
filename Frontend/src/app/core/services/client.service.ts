@@ -1,15 +1,17 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import { Observable } from 'rxjs';
+import { map, Observable } from 'rxjs';
 import { apiConfig } from './api.config';
-import { ClientDetails, ClientSummary, ClientUpsertRequest } from '../models/client.models';
+import { ClientDetails, ClientResponse, ClientSummary, ClientUpsertRequest } from '../models/client.models';
 
 @Injectable({ providedIn: 'root' })
 export class ClientService {
   constructor(private readonly http: HttpClient) {}
 
   getClients(): Observable<ClientSummary[]> {
-    return this.http.get<ClientSummary[]>(`${apiConfig.apiBaseUrl}/clients`);
+    return this.http.get<ClientResponse[]>(`${apiConfig.apiBaseUrl}/clients`).pipe(
+      map((clients) => clients.map((client) => this.toSummary(client)))
+    );
   }
 
   getClient(id: string): Observable<ClientDetails> {
@@ -26,5 +28,17 @@ export class ClientService {
 
   deleteClient(id: string): Observable<void> {
     return this.http.delete<void>(`${apiConfig.apiBaseUrl}/clients/${id}`);
+  }
+
+  private toSummary(client: ClientResponse): ClientSummary {
+    return {
+      id: client.id,
+      name: client.name,
+      contactName: client.contactName,
+      contactEmail: client.contactEmail,
+      phoneNumber: client.phoneNumber,
+      projects: client.projectCount,
+      openTasks: client.openTaskCount
+    };
   }
 }

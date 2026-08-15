@@ -1,0 +1,58 @@
+<section class="screen">
+  <div class="page-header profile-header">
+    <div>
+      <p class="eyebrow">Account</p>
+      <h1>Profile</h1>
+      <p>Review your account details and personal preferences.</p>
+    </div>
+    <button type="button">Edit Profile</button>
+  </div>
+
+  <section class="profile-layout">
+    <article class="profile-card">
+      <div>
+        <h2>Profile Information</h2>
+        <dl class="profile-info">
+          <div>
+            <dt>Full name</dt>
+            <dd>{{ fullName() }}</dd>
+          </div>
+          <div>
+            <dt>Email address</dt>
+            <dd>{{ user()?.email || '—' }}</dd>
+          </div>
+          <div>
+            <dt>Role</dt>
+            <dd>{{ user()?.role || 'Member' }}</dd>
+          </div>
+          <div>
+            <dt>Status</dt>
+            <dd>Active</dd>
+          </div>
+        </dl>
+      </div>
+      <div class="profile-avatar">
+        <div class="profile-avatar__bubble">{{ initials() }}</div>
+        <button type="button" class="secondary">Change Avatar</button>
+      </div>
+    </article>
+
+    <article class="preferences-card">
+      <h3>Preferences</h3>
+      <div class="toggle-row">
+        <div>
+          <strong>Email notifications</strong>
+          <p>Receive email updates about tasks and projects.</p>
+        </div>
+        <button type="button" class="switch" [class.is-on]="emailNotifications()" (click)="toggleEmailNotifications()"></button>
+      </div>
+      <div class="toggle-row">
+        <div>
+          <strong>Task reminders</strong>
+          <p>Receive prompt reminders for deadlines and urgent work.</p>
+        </div>
+        <button type="button" class="switch" [class.is-on]="taskReminders()" (click)="toggleTaskReminders()"></button>
+      </div>
+    </article>
+  </section>
+</section>

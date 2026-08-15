@@ -1,0 +1,31 @@
+<header class="topbar">
+  <div class="topbar__title">
+    <button type="button" class="topbar__menu" aria-label="Toggle navigation" (click)="menuToggle.emit()">☰</button>
+    <div class="topbar__page">
+      <p class="topbar__eyebrow">WorkPulse · {{ pageTitle() }}</p>
+    </div>
+  </div>
+
+  <label class="topbar__search">
+    <input type="search" placeholder="Search tasks, projects, clients..." />
+    <span>Ctrl + K</span>
+  </label>
+
+  @if (searchOpen()) {
+    <label class="topbar__search topbar__search--mobile">
+      <input type="search" placeholder="Search tasks, projects, clients..." />
+      <button type="button" class="icon-button" aria-label="Close search" (click)="toggleSearch()">✕</button>
+    </label>
+  }
+
+  <div class="topbar__meta">
+    <button type="button" class="icon-button" aria-label="Notifications">🔔</button>
+    <button type="button" class="avatar-button" (click)="toggleMenu()" aria-label="Account menu">
+      {{ initials() }}
+    </button>
+    <div class="topbar__user">
+      <strong>{{ userName() }}</strong>
+      <small>{{ role() }}</small>
+    </div>
+  </div>
+</header>

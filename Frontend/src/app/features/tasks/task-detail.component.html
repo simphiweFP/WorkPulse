@@ -1,0 +1,54 @@
+<section class="screen task-detail">
+  @if (loadError()) {
+    <app-page-header eyebrow="Tasks" title="Task not available" [subtitle]="loadError()" />
+  } @else if (task(); as model) {
+    <app-page-header eyebrow="Tasks" [title]="model.title" [subtitle]="model.clientName + ' · ' + model.projectName" />
+
+    <div class="task-detail__layout">
+      <article class="panel task-detail__main">
+        <div class="task-detail__hero">
+          <div>
+            <span class="badge badge--danger">{{ model.priority }}</span>
+            <h2>{{ model.title }}</h2>
+            <p>{{ model.clientName }} · {{ model.projectName }}</p>
+          </div>
+          <div class="task-detail__metrics">
+            <div><span>Status</span><strong>{{ model.status }}</strong></div>
+            <div><span>Sprint</span><strong>{{ model.sprintName ?? 'Backlog' }}</strong></div>
+            <div><span>Deadline</span><strong>{{ model.deadline | date:'mediumDate' }}</strong></div>
+            <div><span>Assignee</span><strong>{{ model.assigneeName }}</strong></div>
+          </div>
+        </div>
+
+        <div class="task-detail__section">
+          <h3>Description</h3>
+          <p>Task details are loaded from the live API. Additional fields like acceptance criteria or subtasks are not currently exposed by the backend.</p>
+        </div>
+
+        <div class="task-detail__section">
+          <h3>Checklist</h3>
+          <ul>
+            <li>Review the current assignment and status.</li>
+            <li>Continue work if the task is in progress.</li>
+            <li>Complete the task when the work is done.</li>
+          </ul>
+        </div>
+      </article>
+
+      <aside class="panel task-detail__side">
+        <h3>Action Panel</h3>
+        <button type="button">Continue Task</button>
+        <button type="button" class="secondary">Complete Task</button>
+        <button type="button" class="secondary">Add Note</button>
+        <div class="task-detail__history">
+          <h4>Recent Activity</h4>
+          <p>Assigned to {{ model.assigneeName }}</p>
+          <p>Priority set to {{ model.priority }}</p>
+          <p>Deadline: {{ model.deadline | date:'mediumDate' }}</p>
+        </div>
+      </aside>
+    </div>
+  } @else {
+    <app-page-header eyebrow="Tasks" title="Task not available" subtitle="The requested task could not be loaded." />
+  }
+</section>

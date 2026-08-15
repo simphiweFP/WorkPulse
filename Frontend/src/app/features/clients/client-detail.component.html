@@ -1,0 +1,33 @@
+<section class="screen">
+  @if (loading()) {
+    <app-loading-state message="Loading client details..." />
+  } @else if (error()) {
+    <app-error-state title="Client unavailable" [message]="error()" actionLabel="Try Again" [retry]="loadClient.bind(this)" />
+  } @else if (client(); as model) {
+    <app-page-header eyebrow="Clients" [title]="model.name" subtitle="Client information, projects, and task summary." />
+    <div class="summary-row">
+      <article class="summary-card"><span class="summary-card__icon summary-card__icon--info"></span><div><strong>{{ model.projects }}</strong><p>Projects</p><small>Active and completed delivery streams</small></div></article>
+      <article class="summary-card"><span class="summary-card__icon summary-card__icon--warning"></span><div><strong>{{ model.openTasks }}</strong><p>Open tasks</p><small>Current operational work</small></div></article>
+      <article class="summary-card"><span class="summary-card__icon summary-card__icon--success"></span><div><strong>{{ model.contactName }}</strong><p>Primary contact</p><small>{{ model.contactEmail }}</small></div></article>
+      <article class="summary-card"><span class="summary-card__icon summary-card__icon--danger"></span><div><strong>{{ model.phoneNumber }}</strong><p>Phone</p><small>Direct contact line</small></div></article>
+    </div>
+
+    <div class="admin-grid">
+      <article class="panel">
+        <h3>About</h3>
+        <p>{{ model.description }}</p>
+      </article>
+
+      <article class="panel">
+        <h3>Working Pattern</h3>
+        <ul>
+          <li>Weekly delivery review with stakeholders.</li>
+          <li>Shared task ownership with engineering leads.</li>
+          <li>Priority changes reflected in the task board.</li>
+        </ul>
+      </article>
+    </div>
+  } @else {
+    <app-empty-state title="Client not found" message="The client record could not be loaded." />
+  }
+</section>

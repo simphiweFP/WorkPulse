@@ -1,0 +1,137 @@
+<section class="screen">
+  <app-page-header eyebrow="Clients" title="Clients" subtitle="Manage customer accounts, contacts, and open work in one place." />
+
+  @if (loading()) {
+    <app-loading-state message="Loading clients..." />
+  } @else if (error()) {
+    <app-error-state title="Clients unavailable" [message]="error()" actionLabel="Try Again" [retry]="loadClients.bind(this)" />
+  } @else {
+    <div class="list-toolbar">
+      <label class="list-search">
+        <span class="sr-only">Search clients</span>
+        <input type="search" placeholder="Search" [value]="search()" (input)="search.set(($any($event.target).value))" />
+      </label>
+      <button type="button" (click)="openCreateClient()">+ New Client</button>
+    </div>
+
+    @if (filteredClients().length) {
+      <div class="table-card">
+        <table>
+          <thead>
+            <tr>
+              <th>Client</th>
+              <th>Projects</th>
+              <th>Primary Contact</th>
+              <th>Open Tasks</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (client of filteredClients(); track client.id) {
+              <tr>
+                <td>
+                  <div class="table-title">{{ client.name }}</div>
+                  <small>{{ client.contactEmail }}</small>
+                </td>
+                <td>{{ client.projects }}</td>
+                <td>
+                  <div>{{ client.contactName }}</div>
+                  <small>{{ client.phoneNumber }}</small>
+                </td>
+                <td>{{ client.openTasks }}</td>
+                <td><span class="badge badge--success">Active</span></td>
+                <td class="row-actions">
+                  <button type="button" class="secondary" (click)="selectClient(client)">Edit</button>
+                  <button type="button" class="danger" (click)="removeClient(client.id)">Delete</button>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <div class="mobile-record-list">
+        @for (client of filteredClients(); track client.id) {
+          <article class="mobile-record panel">
+            <div class="mobile-record__header">
+              <div>
+                <h3>{{ client.name }}</h3>
+                <p>{{ client.contactName }}</p>
+              </div>
+              <span class="badge badge--success">Active</span>
+            </div>
+            <div class="mobile-record__meta">
+              <div><span>Projects</span><strong>{{ client.projects }}</strong></div>
+              <div><span>Open Tasks</span><strong>{{ client.openTasks }}</strong></div>
+            </div>
+            <div class="mobile-record__actions">
+              <button type="button" class="secondary" (click)="selectClient(client)">Edit</button>
+              <button type="button" class="secondary" (click)="removeClient(client.id)">Delete</button>
+            </div>
+          </article>
+        }
+      </div>
+    } @else {
+      <app-empty-state title="No clients yet." message="Add the first client to start organizing work." />
+    }
+
+    @if (modalOpen()) {
+      <div class="modal-backdrop" (click)="closeModal()"></div>
+      <section class="modal panel" role="dialog" aria-modal="true" aria-label="Create or edit client">
+        <div class="modal__header">
+          <div>
+            <p class="eyebrow">Clients</p>
+            <h2>{{ selectedClientId() ? 'Edit Client' : 'New Client' }}</h2>
+          </div>
+          <button type="button" class="secondary" (click)="closeModal()">Close</button>
+        </div>
+
+        <form class="form-grid modal__form" [formGroup]="form" (ngSubmit)="saveClient()">
+          @if (formError()) {
+            <div class="field-error full-width">{{ formError() }}</div>
+          }
+          <label>
+            <span>Client *</span>
+            <input formControlName="name" />
+            @if (form.controls.name.touched && form.controls.name.invalid) {
+              <small class="field-error">Client name is required.</small>
+            }
+          </label>
+          <label>
+            <span>Primary Contact *</span>
+            <input formControlName="contactName" />
+            @if (form.controls.contactName.touched && form.controls.contactName.invalid) {
+              <small class="field-error">Primary contact is required.</small>
+            }
+          </label>
+          <label>
+            <span>Email *</span>
+            <input type="email" formControlName="contactEmail" />
+            @if (form.controls.contactEmail.touched && form.controls.contactEmail.invalid) {
+              <small class="field-error">Enter a valid email address.</small>
+            }
+          </label>
+          <label>
+            <span>Phone *</span>
+            <input formControlName="phoneNumber" />
+            @if (form.controls.phoneNumber.touched && form.controls.phoneNumber.invalid) {
+              <small class="field-error">Phone number is required.</small>
+            }
+          </label>
+          <label class="full-width">
+            <span>Description *</span>
+            <textarea rows="4" formControlName="description"></textarea>
+            @if (form.controls.description.touched && form.controls.description.invalid) {
+              <small class="field-error">Description is required.</small>
+            }
+          </label>
+          <div class="actions full-width">
+            <button type="button" class="secondary" (click)="closeModal()">Cancel</button>
+            <button type="submit" [disabled]="submitting()">{{ submitting() ? 'Saving...' : (selectedClientId() ? 'Update Client' : 'Create Client') }}</button>
+          </div>
+        </form>
+      </section>
+    }
+  }
+</section>

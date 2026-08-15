@@ -1,0 +1,105 @@
+.list-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.list-search {
+  flex: 1;
+  max-width: 320px;
+}
+
+.list-search input {
+  width: 100%;
+}
+
+.table-title {
+  font-weight: 700;
+}
+
+.progress-cell {
+  display: grid;
+  gap: 6px;
+}
+
+.progress-track {
+  width: 100%;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--wp-border-soft);
+  overflow: hidden;
+}
+
+.progress-track span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--wp-primary), var(--wp-accent));
+}
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.42);
+  z-index: 40;
+}
+
+.modal {
+  position: fixed;
+  z-index: 41;
+  inset: 50% auto auto 50%;
+  transform: translate(-50%, -50%);
+  width: min(720px, calc(100vw - 32px));
+  max-height: calc(100vh - 32px);
+  overflow: auto;
+  padding: 18px;
+}
+
+.modal__header {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: start;
+  margin-bottom: 14px;
+}
+
+.modal__form {
+  gap: 12px;
+}
+
+.field-error {
+  display: block;
+  margin-top: 4px;
+  color: #dc2626;
+  font-size: 12px;
+}
+
+.modal button[disabled] {
+  opacity: 0.75;
+  cursor: wait;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+@media (max-width: 768px) {
+  .list-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .list-search {
+    max-width: none;
+  }
+}

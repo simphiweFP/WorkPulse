@@ -1,9 +1,50 @@
-.layout-shell {
+.shell-layout {
   display: grid;
-  grid-template-columns: 260px 1fr;
+  grid-template-columns: var(--wp-sidebar-width) minmax(0, 1fr);
   min-height: 100vh;
 }
 
-.content {
+.shell-main {
   min-width: 0;
+  position: relative;
+}
+
+.shell-content {
+  padding: 0 24px 24px;
+}
+
+.shell-backdrop {
+  display: none;
+}
+
+@media (max-width: 1100px) {
+  .shell-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .shell-content {
+    padding: 0 16px 16px;
+  }
+
+  .shell-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.45);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .2s ease;
+    z-index: 20;
+  }
+
+  .shell-layout--drawer-open .shell-backdrop.is-open {
+    opacity: 1;
+    pointer-events: auto;
+  }
+}
+
+@media (max-width: 720px) {
+  .shell-content {
+    padding: 0 12px 12px;
+  }
 }

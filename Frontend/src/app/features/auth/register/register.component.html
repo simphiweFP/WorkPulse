@@ -1,41 +1,55 @@
-<h2>Register</h2>
+<div class="auth-shell">
+  <section class="auth-brand">
+    <div class="auth-brand__mark"></div>
+    <h1>WorkPulse</h1>
+    <p class="auth-brand__tagline">Know what matters today.</p>
+    <p class="auth-brand__body">Create your developer workspace and keep daily work focused.</p>
+  </section>
 
-<form [formGroup]="form" (ngSubmit)="submit()">
-  <label for="firstName">First name</label>
-  <input id="firstName" type="text" formControlName="firstName" />
-  @if (form.controls.firstName.touched && form.controls.firstName.invalid) {
-    <small>First name is required.</small>
-  }
+  <section class="auth-panel">
+    <div class="auth-panel__card">
+      <p class="auth-kicker">Join WorkPulse</p>
+      <h2>Create your account</h2>
+      <p class="auth-help">Set up your developer profile and get started in a few moments.</p>
 
-  <label for="lastName">Last name</label>
-  <input id="lastName" type="text" formControlName="lastName" />
-  @if (form.controls.lastName.touched && form.controls.lastName.invalid) {
-    <small>Last name is required.</small>
-  }
+      <form [formGroup]="form" (ngSubmit)="submit()" class="auth-form" novalidate>
+        <label>
+          First Name
+          <input type="text" formControlName="firstName" [class.input-error]="fieldInvalid('firstName')" />
+          <small class="auth-field-error" [class.auth-field-error--visible]="fieldInvalid('firstName')">First name is required.</small>
+        </label>
 
-  <label for="email">Email</label>
-  <input id="email" type="email" formControlName="email" />
-  @if (form.controls.email.touched && form.controls.email.invalid) {
-    <small>Email is required and must be valid.</small>
-  }
+        <label>
+          Last Name
+          <input type="text" formControlName="lastName" [class.input-error]="fieldInvalid('lastName')" />
+          <small class="auth-field-error" [class.auth-field-error--visible]="fieldInvalid('lastName')">Last name is required.</small>
+        </label>
 
-  <label for="password">Password</label>
-  <input id="password" type="password" formControlName="password" />
-  @if (form.controls.password.touched && form.controls.password.invalid) {
-    <small>Password must be at least 8 chars with uppercase, lowercase, and number.</small>
-  }
+        <label>
+          Email
+          <input type="email" formControlName="email" [class.input-error]="fieldInvalid('email')" />
+          <small class="auth-field-error" [class.auth-field-error--visible]="fieldInvalid('email')">Enter a valid email address.</small>
+        </label>
 
-  <label for="confirmPassword">Confirm password</label>
-  <input id="confirmPassword" type="password" formControlName="confirmPassword" />
-  @if ((form.controls.confirmPassword.touched && form.controls.confirmPassword.invalid) || form.errors?.['passwordMismatch']) {
-    <small>Passwords must match.</small>
-  }
+        <label>
+          Password
+          <input type="password" formControlName="password" [class.input-error]="fieldInvalid('password')" />
+          <small class="auth-field-error" [class.auth-field-error--visible]="fieldInvalid('password')">Use at least 8 characters with upper, lower, and a number.</small>
+        </label>
 
-  @if (errorMessage) {
-    <p class="error">{{ errorMessage }}</p>
-  }
+        <label>
+          Confirm Password
+          <input type="password" formControlName="confirmPassword" [class.input-error]="fieldInvalid('confirmPassword') || passwordsMismatch" />
+          <small class="auth-field-error" [class.auth-field-error--visible]="fieldInvalid('confirmPassword')">Confirm your password.</small>
+          <small class="auth-field-error" [class.auth-field-error--visible]="passwordsMismatch">Passwords must match.</small>
+        </label>
 
-  <button type="submit" [disabled]="isSubmitting">Create account</button>
-</form>
+        <p class="auth-error" role="alert" [class.auth-error--visible]="!!errorMessage">{{ errorMessage }}</p>
 
-<p>Already have an account? <a routerLink="/login">Login</a></p>
+        <button type="submit" [disabled]="isSubmitting" [class.button--retry]="submissionFailed">{{ submitLabel }}</button>
+      </form>
+
+      <a class="auth-link" routerLink="/login">Already have an account? Sign in</a>
+    </div>
+  </section>
+</div>

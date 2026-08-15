@@ -1,0 +1,74 @@
+<section class="screen">
+  <div class="page-header">
+    <div>
+      <p class="eyebrow">Team</p>
+      <h1>Team & Access</h1>
+      <p>Manage the people working in WorkPulse and keep access aligned to roles.</p>
+    </div>
+    <button type="button">Invite Member</button>
+  </div>
+
+  <div class="summary-row">
+    <article class="summary-card">
+      <span class="summary-card__icon summary-card__icon--info"></span>
+      <div>
+        <strong>{{ memberCount() }}</strong>
+        <p>Team members</p>
+        <small>People in WorkPulse</small>
+      </div>
+    </article>
+    <article class="summary-card">
+      <span class="summary-card__icon summary-card__icon--success"></span>
+      <div>
+        <strong>{{ totalActiveTasks() }}</strong>
+        <p>Active tasks</p>
+        <small>Assigned work</small>
+      </div>
+    </article>
+    <article class="summary-card">
+      <span class="summary-card__icon summary-card__icon--warning"></span>
+      <div>
+        <strong>{{ totalInProgressTasks() }}</strong>
+        <p>In progress</p>
+        <small>Work moving now</small>
+      </div>
+    </article>
+    <article class="summary-card">
+      <span class="summary-card__icon summary-card__icon--danger"></span>
+      <div>
+        <strong>{{ totalCompletedTasks() }}</strong>
+        <p>Completed</p>
+        <small>Finished work</small>
+      </div>
+    </article>
+  </div>
+
+  <div class="table-card">
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Role</th>
+          <th>Active Tasks</th>
+          <th>In Progress</th>
+          <th>Completed</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (developer of developers(); track developer.id) {
+          <tr>
+            <td>
+              <strong>{{ developer.fullName }}</strong>
+              <br />
+              <small>{{ developer.email }}</small>
+            </td>
+            <td>Developer</td>
+            <td>{{ developer.activeTaskCount }}</td>
+            <td>{{ developer.inProgressTaskCount }}</td>
+            <td>{{ developer.completedTaskCount }}</td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+</section>

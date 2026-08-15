@@ -1,0 +1,148 @@
+:host {
+  display: block;
+}
+
+.task-detail {
+  display: grid;
+  gap: 14px;
+}
+
+.task-detail__layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.6fr) minmax(280px, 0.8fr);
+  gap: 14px;
+}
+
+.task-detail__main,
+.task-detail__side {
+  padding: 18px;
+}
+
+.task-detail__main {
+  border: 1px solid rgba(79, 70, 229, 0.08);
+  box-shadow: var(--wp-shadow-sm);
+}
+
+.task-detail__side {
+  border: 1px solid rgba(79, 70, 229, 0.08);
+  box-shadow: var(--wp-shadow-sm);
+}
+
+.task-detail__hero {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: flex-start;
+  margin-bottom: 18px;
+}
+
+.task-detail__hero h2 {
+  margin: 8px 0 6px;
+  font-size: 24px;
+  line-height: 1.15;
+}
+
+.task-detail__hero .badge {
+  margin-bottom: 6px;
+}
+
+.task-detail__hero p {
+  margin: 0;
+  color: var(--wp-text-muted);
+}
+
+.task-detail__metrics {
+  display: grid;
+  gap: 10px;
+  min-width: 160px;
+}
+
+.task-detail__metrics div {
+  padding: 10px 12px;
+  border-radius: 14px;
+  border: 1px solid #e2e8f0;
+  background: #f8fafc;
+}
+
+.task-detail__metrics span,
+.task-detail__section h3,
+.task-detail__history h4 {
+  display: block;
+  margin: 0 0 4px;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--wp-text-muted);
+}
+
+.task-detail__metrics strong {
+  font-size: 14px;
+}
+
+.task-detail__section {
+  padding-top: 14px;
+  border-top: 1px solid var(--wp-border);
+}
+
+.task-detail__section p,
+.task-detail__section li,
+.task-detail__history p {
+  color: var(--wp-text-muted);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.task-detail__section ul {
+  margin: 0;
+  padding-left: 18px;
+}
+
+.task-detail__side {
+  display: grid;
+  gap: 10px;
+  align-content: start;
+}
+
+.task-detail__side h3 {
+  margin: 0;
+  font-size: 18px;
+}
+
+.task-detail__side button {
+  width: 100%;
+}
+
+.task-detail__side button:not(:last-child) {
+  margin-bottom: 2px;
+}
+
+.task-detail__history {
+  padding-top: 10px;
+  margin-top: 10px;
+  border-top: 1px solid var(--wp-border);
+}
+
+@media (max-width: 1100px) {
+  .task-detail__layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 720px) {
+  .task-detail__main,
+  .task-detail__side {
+    padding: 16px;
+  }
+
+  .task-detail__hero {
+    flex-direction: column;
+  }
+
+  .task-detail__metrics {
+    width: 100%;
+  }
+
+  .task-detail__side button {
+    min-height: 42px;
+  }
+}

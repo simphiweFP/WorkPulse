@@ -1,0 +1,33 @@
+<section class="screen">
+  @if (loading()) {
+    <app-loading-state message="Loading project details..." />
+  } @else if (error()) {
+    <app-error-state title="Project unavailable" [message]="error()" actionLabel="Try Again" [retry]="loadProject.bind(this)" />
+  } @else if (project(); as model) {
+    <app-page-header eyebrow="Projects" [title]="model.name" subtitle="Project details and associated tasks." />
+    <div class="summary-row">
+      <article class="summary-card"><span class="summary-card__icon summary-card__icon--info"></span><div><strong>{{ model.clientName }}</strong><p>Client</p><small>Account owner</small></div></article>
+      <article class="summary-card"><span class="summary-card__icon summary-card__icon--warning"></span><div><strong>{{ model.status }}</strong><p>Status</p><small>Current delivery state</small></div></article>
+      <article class="summary-card"><span class="summary-card__icon summary-card__icon--danger"></span><div><strong>{{ model.openTasks }}</strong><p>Open tasks</p><small>In progress work</small></div></article>
+      <article class="summary-card"><span class="summary-card__icon summary-card__icon--success"></span><div><strong>{{ model.completedTasks }}</strong><p>Completed tasks</p><small>Finished work</small></div></article>
+    </div>
+
+    <div class="admin-grid">
+      <article class="panel">
+        <h3>Overview</h3>
+        <p>{{ model.description }}</p>
+      </article>
+
+      <article class="panel">
+        <h3>Delivery Notes</h3>
+        <ul>
+          <li>Tracked against the shared task backlog.</li>
+          <li>Progress changes show in the admin dashboard.</li>
+          <li>Designed for fast handoff between admin and developers.</li>
+        </ul>
+      </article>
+    </div>
+  } @else {
+    <app-empty-state title="Project not found" message="The project record could not be loaded." />
+  }
+</section>

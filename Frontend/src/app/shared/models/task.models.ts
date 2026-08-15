@@ -6,6 +6,8 @@ export interface TaskRecommendation {
   title: string;
   clientName: string;
   projectName: string;
+  sprintId?: string | null;
+  sprintName?: string;
   priority: TaskPriority;
   status: TaskStatus;
   deadline: string;
@@ -18,14 +20,15 @@ export interface TaskRecommendation {
 export interface TodayDashboardSummary {
   tasksToday: number;
   overdue: number;
-  dueToday: number;
-  highOrCritical: number;
+  deadlineToday: number;
+  highPriority: number;
 }
 
 export interface TodayDashboardResponse {
-  firstName: string;
-  date: string;
+  date?: string;
+  firstName?: string;
   summary: TodayDashboardSummary;
+  topPriority: TaskRecommendation;
   overdue: TaskRecommendation[];
   dueToday: TaskRecommendation[];
   recommendedNext: TaskRecommendation[];

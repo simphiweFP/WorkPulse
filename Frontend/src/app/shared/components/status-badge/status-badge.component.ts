@@ -6,7 +6,7 @@ import { TaskStatus } from '../../models/task.models';
   selector: 'app-status-badge',
   standalone: true,
   imports: [LowerCasePipe],
-  template: `<span class="status status-{{ status() | lowercase }}">{{ status() }}</span>`
+  templateUrl: './status-badge.component.html'
 })
 export class StatusBadgeComponent {
   status = input.required<TaskStatus>();

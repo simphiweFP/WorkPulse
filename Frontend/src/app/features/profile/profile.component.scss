@@ -1,0 +1,164 @@
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 14px;
+}
+
+.profile-header button {
+  min-height: 38px;
+  padding: 0 14px;
+}
+
+.eyebrow {
+  margin: 0;
+  color: var(--wp-text-muted);
+  font-size: 12px;
+}
+
+.page-header h1 {
+  margin: 4px 0;
+  font-size: 36px;
+  line-height: 1.08;
+}
+
+.page-header p {
+  margin: 0;
+  color: var(--wp-text-muted);
+}
+
+.profile-layout {
+  display: grid;
+  gap: 14px;
+}
+
+.profile-card,
+.preferences-card {
+  background: var(--wp-surface);
+  border: 1px solid var(--wp-border);
+  border-radius: 16px;
+  box-shadow: var(--wp-shadow-sm);
+  padding: 18px;
+}
+
+.profile-card {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 20px;
+  align-items: start;
+}
+
+.profile-card h2,
+.preferences-card h3 {
+  margin: 0;
+  font-size: 18px;
+}
+
+.profile-info {
+  margin-top: 14px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px 18px;
+}
+
+.profile-info dt {
+  margin: 0 0 2px;
+  font-size: 12px;
+  color: var(--wp-text-muted);
+}
+
+.profile-info dd {
+  margin: 0;
+  font-weight: 600;
+}
+
+.profile-avatar {
+  display: grid;
+  gap: 10px;
+  justify-items: center;
+  align-content: center;
+  min-width: 140px;
+}
+
+.profile-avatar__bubble {
+  width: 82px;
+  height: 82px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  color: #fff;
+  font-size: 28px;
+  font-weight: 700;
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+}
+
+.toggle-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 14px 0;
+  border-top: 1px solid var(--wp-border);
+}
+
+.toggle-row:first-of-type {
+  border-top: 0;
+  padding-top: 4px;
+}
+
+.toggle-row p {
+  margin: 0;
+  color: var(--wp-text-muted);
+  font-size: 13px;
+}
+
+.switch {
+  width: 42px;
+  height: 24px;
+  border-radius: 999px;
+  background: #cbd5e1;
+  position: relative;
+  padding: 0;
+  min-height: 24px;
+}
+
+.switch::after {
+  content: '';
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #fff;
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  transition: transform .18s ease;
+}
+
+.switch.is-on {
+  background: #6366f1;
+}
+
+.switch.is-on::after {
+  transform: translateX(18px);
+}
+
+@media (max-width: 900px) {
+  .page-header {
+    align-items: flex-start;
+  }
+
+  .page-header h1 {
+    font-size: 30px;
+  }
+
+  .profile-card {
+    grid-template-columns: 1fr;
+  }
+
+  .profile-info {
+    grid-template-columns: 1fr;
+  }
+
+  .profile-avatar {
+    justify-items: start;
+  }
+}

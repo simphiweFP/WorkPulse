@@ -1,0 +1,124 @@
+<section class="today-screen">
+  @if (loading()) {
+    <app-loading-state message="Loading today's recommendations..." />
+  } @else if (error()) {
+    <section class="error-state">
+      <h2>Today unavailable</h2>
+      <p>{{ error() }}</p>
+    </section>
+  } @else if (dashboard(); as model) {
+    <app-page-header
+      eyebrow="Developer Today"
+      [title]="greeting() + ', ' + greetingName(model) + ' — focus first'"
+      subtitle="One clear place to see what needs attention now, what to start next, and what you already finished."
+      [meta]="formatDate(model.date)"
+    />
+
+    <div class="summary-grid summary-grid--today">
+      <article class="summary-card">
+        <span>Tasks Today</span>
+        <strong>{{ model.summary.tasksToday }}</strong>
+      </article>
+      <article class="summary-card summary-card--danger">
+        <span>Overdue</span>
+        <strong>{{ model.summary.overdue }}</strong>
+      </article>
+      <article class="summary-card summary-card--warning">
+        <span>Due Today</span>
+        <strong>{{ model.summary.deadlineToday }}</strong>
+      </article>
+      <article class="summary-card summary-card--accent">
+        <span>High Priority</span>
+        <strong>{{ model.summary.highPriority }}</strong>
+      </article>
+    </div>
+
+    <section class="today-grid">
+      <article class="panel today-grid__main today-priority-panel">
+        <div class="section-header">
+          <div>
+            <p class="section-eyebrow">Top priority</p>
+            <h2>Start here</h2>
+          </div>
+        </div>
+
+        @if (model.topPriority.taskId) {
+          <app-task-card [task]="model.topPriority" actionLabel="Continue Task" (action)="performTaskAction(model.topPriority)" />
+        } @else {
+          <app-empty-state title="Nothing urgent right now." message="No top-priority task is available." />
+        }
+      </article>
+
+      <aside class="today-grid__aside">
+        <article class="panel compact-panel">
+          <div class="section-header">
+            <div>
+              <p class="section-eyebrow">Today in one glance</p>
+              <h2>Quick signal</h2>
+            </div>
+          </div>
+          <p class="compact-panel__text">Overdue work comes first, then due-today items, then the next best task.</p>
+          <ul class="compact-list">
+            <li><strong>{{ model.summary.overdue }}</strong><span>Overdue</span></li>
+            <li><strong>{{ model.summary.deadlineToday }}</strong><span>Due today</span></li>
+            <li><strong>{{ model.summary.highPriority }}</strong><span>High priority</span></li>
+          </ul>
+        </article>
+      </aside>
+    </section>
+
+    <section class="lane-grid">
+      <article class="panel lane-card">
+        <div class="section-header"><h2>Overdue</h2><a routerLink="/backlog">Backlog</a></div>
+        @if (model.overdue.length) {
+          <div class="task-stack">
+            @for (task of model.overdue; track task.taskId) {
+              <app-task-card [task]="task" actionLabel="Start" (action)="performTaskAction(task)" />
+            }
+          </div>
+        } @else {
+          <app-empty-state title="No overdue tasks" message="Everything is currently on track." />
+        }
+      </article>
+
+      <article class="panel lane-card">
+        <div class="section-header"><h2>Due Today</h2><a routerLink="/backlog">Backlog</a></div>
+        @if (model.dueToday.length) {
+          <div class="task-stack">
+            @for (task of model.dueToday; track task.taskId) {
+              <app-task-card [task]="task" actionLabel="Start" (action)="performTaskAction(task)" />
+            }
+          </div>
+        } @else {
+          <app-empty-state title="No tasks due today" message="Nothing is due by end of day." />
+        }
+      </article>
+
+      <article class="panel lane-card">
+        <div class="section-header"><h2>Recommended Next</h2><a routerLink="/backlog">Backlog</a></div>
+        @if (model.recommendedNext.length) {
+          <div class="task-stack">
+            @for (task of model.recommendedNext; track task.taskId) {
+              <app-task-card [task]="task" actionLabel="Continue Task" (action)="performTaskAction(task)" />
+            }
+          </div>
+        } @else {
+          <app-empty-state title="No recommendations" message="No immediate next task is available." />
+        }
+      </article>
+
+      <article class="panel lane-card">
+        <div class="section-header"><h2>Recently Completed</h2><a routerLink="/my-tasks">My tasks</a></div>
+        @if (model.completedToday.length) {
+          <div class="task-stack">
+            @for (task of model.completedToday; track task.taskId) {
+              <app-task-card [task]="task" actionLabel="" />
+            }
+          </div>
+        } @else {
+          <app-empty-state title="No completed tasks yet" message="Completed work will appear here during the day." />
+        }
+      </article>
+    </section>
+  }
+</section>

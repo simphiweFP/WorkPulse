@@ -6,7 +6,7 @@ import { TaskPriority } from '../../models/task.models';
   selector: 'app-priority-badge',
   standalone: true,
   imports: [LowerCasePipe],
-  template: `<span class="priority priority-{{ priority() | lowercase }}">{{ priority() }}</span>`
+  templateUrl: './priority-badge.component.html'
 })
 export class PriorityBadgeComponent {
   priority = input.required<TaskPriority>();

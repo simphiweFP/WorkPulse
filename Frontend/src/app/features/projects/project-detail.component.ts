@@ -5,31 +5,15 @@ import { catchError, of } from 'rxjs';
 import { ProjectDetails } from '../../core/models/project.models';
 import { ProjectService } from '../../core/services/project.service';
 import { EmptyStateComponent } from '../../shared/components/empty-state/empty-state.component';
+import { ErrorStateComponent } from '../../shared/components/error-state/error-state.component';
 import { LoadingStateComponent } from '../../shared/components/loading-state/loading-state.component';
 import { PageHeaderComponent } from '../../shared/components/page-header/page-header.component';
 
 @Component({
   selector: 'app-project-detail',
   standalone: true,
-  imports: [CommonModule, PageHeaderComponent, LoadingStateComponent, EmptyStateComponent],
-  template: `
-    <section class="screen">
-      @if (loading()) {
-        <app-loading-state message="Loading project details..." />
-      } @else if (project(); as model) {
-        <app-page-header eyebrow="Projects" [title]="model.name" subtitle="Project details and associated tasks." />
-        <div class="panel">
-          <p><strong>Client:</strong> {{ model.clientName }}</p>
-          <p><strong>Status:</strong> {{ model.status }}</p>
-          <p><strong>Open Tasks:</strong> {{ model.openTasks }}</p>
-          <p><strong>Completed Tasks:</strong> {{ model.completedTasks }}</p>
-          <p>{{ model.description }}</p>
-        </div>
-      } @else {
-        <app-empty-state title="Project not found" message="The project record could not be loaded." />
-      }
-    </section>
-  `
+  imports: [CommonModule, PageHeaderComponent, LoadingStateComponent, EmptyStateComponent, ErrorStateComponent],
+  templateUrl: './project-detail.component.html'
 })
 export class ProjectDetailComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
@@ -37,17 +21,31 @@ export class ProjectDetailComponent implements OnInit {
 
   readonly project = signal<ProjectDetails | null>(null);
   readonly loading = signal(true);
+  readonly error = signal('');
 
   ngOnInit(): void {
+    this.loadProject();
+  }
+
+  loadProject(): void {
     const id = this.route.snapshot.paramMap.get('id');
     if (!id) {
       this.loading.set(false);
+      this.error.set('The project record could not be loaded.');
       return;
     }
 
+    this.loading.set(true);
+    this.error.set('');
+
     this.projectService
       .getProject(id)
-      .pipe(catchError(() => of(null)))
+      .pipe(
+        catchError(() => {
+          this.error.set('We could not load this project right now. Please try again.');
+          return of(null);
+        })
+      )
       .subscribe((project) => {
         this.project.set(project);
         this.loading.set(false);

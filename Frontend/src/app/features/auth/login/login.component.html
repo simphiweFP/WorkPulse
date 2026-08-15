@@ -1,23 +1,36 @@
-<h2>Login</h2>
+<div class="auth-shell">
+  <section class="auth-brand">
+    <div class="auth-brand__mark"></div>
+    <h1>WorkPulse</h1>
+    <p class="auth-brand__tagline">Know what matters today.</p>
+    <p class="auth-brand__body">Turn deadlines, priorities and assignments into a clear daily focus.</p>
+  </section>
 
-<form [formGroup]="form" (ngSubmit)="submit()">
-  <label for="email">Email</label>
-  <input id="email" type="email" formControlName="email" />
-  @if (form.controls.email.touched && form.controls.email.invalid) {
-    <small>Email is required and must be valid.</small>
-  }
+  <section class="auth-panel">
+    <div class="auth-panel__card">
+      <p class="auth-kicker">Welcome back</p>
+      <h2>Sign in to continue to WorkPulse</h2>
+      <p class="auth-help">Use your WorkPulse account to continue where you left off.</p>
 
-  <label for="password">Password</label>
-  <input id="password" type="password" formControlName="password" />
-  @if (form.controls.password.touched && form.controls.password.invalid) {
-    <small>Password is required.</small>
-  }
+      <form [formGroup]="form" (ngSubmit)="submit()" class="auth-form" novalidate>
+        <label>
+          Email
+          <input id="email" type="email" formControlName="email" placeholder="name@company.com" [class.input-error]="fieldInvalid('email')" />
+          <small class="auth-field-error" [class.auth-field-error--visible]="fieldInvalid('email')">Enter a valid email address.</small>
+        </label>
 
-  @if (errorMessage) {
-    <p class="error">{{ errorMessage }}</p>
-  }
+        <label>
+          Password
+          <input id="password" type="password" formControlName="password" placeholder="••••••••" [class.input-error]="fieldInvalid('password')" />
+          <small class="auth-field-error" [class.auth-field-error--visible]="fieldInvalid('password')">Password is required.</small>
+        </label>
 
-  <button type="submit" [disabled]="isSubmitting">Sign in</button>
-</form>
+        <p class="auth-error" role="alert" [class.auth-error--visible]="!!errorMessage">{{ errorMessage }}</p>
 
-<p>Need an account? <a routerLink="/register">Register</a></p>
+        <button type="submit" [disabled]="isSubmitting" [class.button--retry]="submissionFailed">{{ submitLabel }}</button>
+      </form>
+
+      <a class="auth-link" routerLink="/register">Create account</a>
+    </div>
+  </section>
+</div>

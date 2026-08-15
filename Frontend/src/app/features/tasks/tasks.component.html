@@ -1,0 +1,262 @@
+<section class="screen">
+  <app-page-header eyebrow="Admin Tasks" title="Tasks" subtitle="Create, assign, and move work from backlog to sprint with one compact view." />
+
+  @if (loading()) {
+    <app-loading-state message="Loading tasks..." />
+  } @else if (error()) {
+    <app-error-state title="Tasks unavailable" [message]="error()" actionLabel="Try Again" [retry]="loadData.bind(this)" />
+  } @else {
+    <div class="summary-grid summary-grid--tasks">
+      <article class="summary-card"><span>Total</span><strong>{{ summary().total }}</strong></article>
+      <article class="summary-card summary-card--accent"><span>Todo</span><strong>{{ summary().todo }}</strong></article>
+      <article class="summary-card summary-card--warning"><span>In Progress</span><strong>{{ summary().inProgress }}</strong></article>
+      <article class="summary-card summary-card--danger"><span>Completed</span><strong>{{ summary().completed }}</strong></article>
+    </div>
+
+    <div class="list-toolbar">
+      <div class="list-toolbar__spacer"></div>
+      <button type="button" (click)="openCreateTask()">+ New Task</button>
+    </div>
+
+    <div class="filters-toggle-bar">
+      <button type="button" class="secondary filters-toggle-bar__button" (click)="filtersOpen.update((open) => !open)">Filters{{ activeFilterCount() ? ' (' + activeFilterCount() + ')' : '' }}</button>
+    </div>
+
+    <section class="panel filters form-grid" [class.filters--collapsed]="filtersOpen() === false" [formGroup]="filters">
+      <label><input placeholder="Client" formControlName="clientId" /></label>
+      <label><input placeholder="Project" formControlName="projectId" /></label>
+      <label><input placeholder="Assignee" formControlName="assigneeId" /></label>
+      <label>
+        <select formControlName="priority">
+          <option value="">Priority</option>
+          <option value="Low">Low</option>
+          <option value="Medium">Medium</option>
+          <option value="High">High</option>
+          <option value="Critical">Critical</option>
+        </select>
+      </label>
+      <label>
+        <select formControlName="status">
+          <option value="">Status</option>
+          <option value="Todo">Todo</option>
+          <option value="InProgress">In Progress</option>
+          <option value="Completed">Completed</option>
+        </select>
+      </label>
+      <label><input type="date" formControlName="deadline" /></label>
+      <div class="actions full-width">
+        <button type="button" class="secondary" (click)="applyFilters()">Apply Filters</button>
+        <button type="button" class="secondary" (click)="resetFilters()">Reset</button>
+      </div>
+    </section>
+
+    @if (tasks().length) {
+      <div class="table-card">
+        <table>
+          <thead>
+            <tr>
+              <th>Project</th>
+              <th>Task</th>
+              <th>Assignee</th>
+              <th>Sprint</th>
+              <th>Deadline</th>
+              <th>Priority</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (task of tasks(); track task.id) {
+              <tr>
+                <td>{{ task.projectName }}</td>
+                <td>
+                  <div class="table-title">{{ task.title }}</div>
+                  <small>{{ task.clientName }}</small>
+                </td>
+                <td>{{ task.assigneeName }}</td>
+                <td>{{ sprintLabel(task) }}</td>
+                <td>{{ task.deadline | date:'mediumDate' }}</td>
+                <td><app-priority-badge [priority]="task.priority" /></td>
+                <td><app-status-badge [status]="task.status" /></td>
+                <td class="row-actions">
+                  <button type="button" class="secondary" (click)="openTaskModal(task)">View</button>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <div class="mobile-record-list">
+        @for (task of tasks(); track task.id) {
+          <article class="mobile-record panel">
+            <div class="mobile-record__header">
+              <div>
+                <h3>{{ task.title }}</h3>
+                  <p>{{ task.projectName }}</p>
+              </div>
+                <app-priority-badge [priority]="task.priority" />
+            </div>
+            <div class="mobile-record__meta mobile-record__meta--stacked">
+                <div><span>Assignee</span><strong>{{ task.assigneeName }}</strong></div>
+                <div><span>Sprint</span><strong>{{ sprintLabel(task) }}</strong></div>
+              <div><span>Deadline</span><strong>{{ task.deadline | date:'mediumDate' }}</strong></div>
+                <div><span>Status</span><strong>{{ task.status }}</strong></div>
+            </div>
+            <div class="mobile-record__actions mobile-record__actions--wrap">
+              <button type="button" class="secondary" (click)="openTaskModal(task)">View</button>
+            </div>
+          </article>
+        }
+      </div>
+    } @else {
+      <app-empty-state title="No tasks yet." message="Create the first task to start assigning work." />
+    }
+
+    @if (taskFormOpen()) {
+      <div class="task-modal-backdrop" (click)="closeTaskForm()"></div>
+      <section class="task-form-modal panel" role="dialog" aria-modal="true" aria-label="Create or assign task">
+        <div class="task-form-modal__header">
+          <div>
+            <p class="eyebrow">Tasks</p>
+            <h2>{{ selectedTaskId() ? 'Edit Task' : 'Create / Assign Task' }}</h2>
+            <p class="task-form-modal__subtitle">Fields marked with an asterisk are required.</p>
+          </div>
+          <button type="button" class="secondary" (click)="closeTaskForm()">Close</button>
+        </div>
+
+        <form class="form-grid task-form-modal__form" [formGroup]="form" (ngSubmit)="saveTask()">
+          @if (formError()) {
+            <div class="field-error full-width">{{ formError() }}</div>
+          }
+          <label class="full-width">
+            <span>Task Title *</span>
+            <input placeholder="Task Title" formControlName="title" />
+            @if (form.controls.title.touched && form.controls.title.invalid) {
+              <small class="field-error">Task title is required.</small>
+            }
+          </label>
+          <label class="full-width">
+            <span>Description *</span>
+            <textarea rows="4" placeholder="Description" formControlName="description"></textarea>
+            @if (form.controls.description.touched && form.controls.description.invalid) {
+              <small class="field-error">Description is required.</small>
+            }
+          </label>
+          <label>
+            <span>Client *</span>
+            <select formControlName="clientId" (change)="onClientChange()">
+              <option value="">Select...</option>
+              @for (client of clients(); track client.id) {
+                <option [value]="client.id">{{ client.name }}</option>
+              }
+            </select>
+            @if (form.controls.clientId.touched && form.controls.clientId.invalid) {
+              <small class="field-error">Client is required.</small>
+            }
+          </label>
+          <label>
+            <span>Project *</span>
+            <select formControlName="projectId">
+              <option value="">Select...</option>
+              @for (project of availableProjects(); track project.id) {
+                <option [value]="project.id">{{ project.name }}</option>
+              }
+            </select>
+            @if (form.controls.projectId.touched && form.controls.projectId.invalid) {
+              <small class="field-error">Project is required.</small>
+            }
+          </label>
+          <label>
+            <span>Sprint</span>
+            <select formControlName="sprintId">
+              <option value="">Backlog</option>
+              @for (sprint of sprints(); track sprint.id) {
+                <option [value]="sprint.id">{{ sprint.name }}</option>
+              }
+            </select>
+            <small class="field-note">Leave blank to keep the task in backlog.</small>
+          </label>
+          <label>
+            <span>Priority *</span>
+            <select formControlName="priority">
+              <option value="Low">Low</option>
+              <option value="Medium">Medium</option>
+              <option value="High">High</option>
+              <option value="Critical">Critical</option>
+            </select>
+            @if (form.controls.priority.touched && form.controls.priority.invalid) {
+              <small class="field-error">Priority is required.</small>
+            }
+          </label>
+          <label>
+            <span>Assignee *</span>
+            <select formControlName="assigneeId">
+              <option value="">Select...</option>
+              @for (assignee of assignees(); track assignee.id) {
+                <option [value]="assignee.id">{{ assignee.firstName }} {{ assignee.lastName }}</option>
+              }
+            </select>
+            @if (form.controls.assigneeId.touched && form.controls.assigneeId.invalid) {
+              <small class="field-error">Assignee is required.</small>
+            }
+          </label>
+          <label>
+            <span>Deadline *</span>
+            <input type="date" formControlName="deadline" />
+            @if (form.controls.deadline.touched && form.controls.deadline.invalid) {
+              <small class="field-error">Deadline is required.</small>
+            }
+          </label>
+          <div class="actions full-width">
+            <button type="button" class="secondary" (click)="closeTaskForm()">Cancel</button>
+            <button type="submit" [disabled]="submitting()">{{ submitting() ? 'Saving...' : (selectedTaskId() ? 'Update Task' : 'Create Task') }}</button>
+          </div>
+        </form>
+      </section>
+    }
+  }
+
+  @if (selectedTask()) {
+    <div class="task-modal-backdrop" (click)="closeTaskModal()"></div>
+    <section class="task-modal panel" role="dialog" aria-modal="true" [attr.aria-label]="selectedTask()?.title">
+      <div class="task-modal__header">
+        <div>
+          <p class="eyebrow">Task Details</p>
+          <h2>{{ selectedTask()?.title }}</h2>
+          <p>{{ selectedTask()?.clientName }} · {{ selectedTask()?.projectName }}</p>
+        </div>
+        <button type="button" class="secondary" (click)="closeTaskModal()">Close</button>
+      </div>
+
+      <div class="task-modal__grid">
+        <article>
+          <h3>Summary</h3>
+          <p><strong>Assignee:</strong> {{ selectedTask()?.assigneeName }}</p>
+          <p><strong>Priority:</strong> <app-priority-badge [priority]="selectedTask()!.priority" /></p>
+          <p><strong>Status:</strong> <app-status-badge [status]="selectedTask()!.status" /></p>
+          <p><strong>Deadline:</strong> {{ selectedTask()?.deadline | date:'mediumDate' }}</p>
+        </article>
+
+        <article>
+          <h3>Actions</h3>
+          <div class="task-modal__actions">
+            @if (modalActionBusy()) {
+              <button type="button" disabled class="secondary">Working...</button>
+            } @else {
+              <button type="button" (click)="startTask(selectedTask()!.id)" [disabled]="selectedTask()?.status !== 'Todo'">Start</button>
+              <button type="button" class="secondary" (click)="completeTask(selectedTask()!.id)" [disabled]="selectedTask()?.status === 'Completed'">Complete</button>
+              <button type="button" class="secondary" (click)="selectedTask() && openEditTask(selectedTask()!)">Edit</button>
+              <button type="button" class="danger" (click)="deleteTask(selectedTask()!.id)">Delete</button>
+            }
+          </div>
+        </article>
+      </div>
+
+      <div class="task-modal__notes">
+        <h3>Task Notes</h3>
+        <p>{{ selectedTask()?.title }} is tracked under {{ selectedTask()?.projectName }} and assigned to {{ selectedTask()?.assigneeName }}.</p>
+      </div>
+    </section>
+  }
+</section>

@@ -1,0 +1,87 @@
+.sprints-screen {
+  display: grid;
+  gap: 16px;
+}
+
+.toolbar {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.panel {
+  padding: 18px;
+}
+
+.table-card {
+  overflow: auto;
+}
+
+.sprints-screen table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+th,
+td {
+  padding: 12px 10px;
+  border-bottom: 1px solid var(--wp-border);
+  text-align: left;
+}
+
+.row-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.42);
+  z-index: 40;
+}
+
+.modal {
+  position: fixed;
+  z-index: 41;
+  inset: 50% auto auto 50%;
+  transform: translate(-50%, -50%);
+  width: min(720px, calc(100vw - 32px));
+  max-height: calc(100vh - 32px);
+  overflow: auto;
+  padding: 18px;
+}
+
+.modal__header {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: start;
+  margin-bottom: 14px;
+}
+
+.modal__form {
+  gap: 12px;
+}
+
+.modal button[disabled] {
+  opacity: 0.75;
+  cursor: wait;
+}
+
+.table-title {
+  font-weight: 700;
+}
+
+@media (max-width: 768px) {
+  .toolbar {
+    justify-content: stretch;
+  }
+
+  .toolbar button {
+    width: 100%;
+  }
+
+  .row-actions {
+    flex-direction: column;
+  }
+}

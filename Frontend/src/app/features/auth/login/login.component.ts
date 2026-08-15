@@ -2,7 +2,10 @@ import { CommonModule } from '@angular/common';
 import { Component } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
+import { finalize, timeout } from 'rxjs';
 import { AuthService } from '../../../core/auth/auth.service';
+import { LoginRequest } from '../../../core/models/auth.models';
+import { getAuthErrorMessage } from '../auth-error.util';
 
 @Component({
   selector: 'app-login',
@@ -13,6 +16,7 @@ import { AuthService } from '../../../core/auth/auth.service';
 })
 export class LoginComponent {
   isSubmitting = false;
+  submissionFailed = false;
   errorMessage = '';
   readonly form;
 
@@ -34,19 +38,37 @@ export class LoginComponent {
     }
 
     this.isSubmitting = true;
+    this.submissionFailed = false;
     this.errorMessage = '';
 
-    this.authService.login(this.form.getRawValue() as { email: string; password: string }).subscribe({
-      next: () => {
-        this.router.navigate(['/dashboard']);
-      },
-      error: (error) => {
-        this.errorMessage = error?.error?.message ?? 'Login failed.';
-        this.isSubmitting = false;
-      },
-      complete: () => {
-        this.isSubmitting = false;
-      }
-    });
+    const request = this.form.getRawValue() as LoginRequest;
+    this.authService
+      .login(request)
+      .pipe(
+        timeout({ first: 15000 }),
+        finalize(() => (this.isSubmitting = false))
+      )
+      .subscribe({
+        next: () => {
+          this.router.navigate(['/dashboard']);
+        },
+        error: (error) => {
+          this.submissionFailed = true;
+          this.errorMessage = getAuthErrorMessage(error, 'Login failed.');
+        }
+      });
+  }
+
+  fieldInvalid(name: 'email' | 'password'): boolean {
+    const control = this.form.controls[name];
+    return control.touched && control.invalid;
+  }
+
+  get submitLabel(): string {
+    if (this.isSubmitting) {
+      return 'Signing in…';
+    }
+
+    return this.submissionFailed ? 'Try again' : 'Sign In';
   }
 }

@@ -7,35 +7,11 @@ import { TaskRecommendation } from '../../models/task.models';
   selector: 'app-task-card',
   standalone: true,
   imports: [PriorityBadgeComponent, StatusBadgeComponent],
-  template: `
-    <article class="task-card">
-      <div class="task-card__header">
-        <div>
-          <h3>{{ task().title }}</h3>
-          <p>{{ task().clientName }} / {{ task().projectName }}</p>
-        </div>
-        <app-priority-badge [priority]="task().priority" />
-      </div>
-
-      <div class="task-card__meta">
-        <app-status-badge [status]="task().status" />
-        <span>{{ deadlineLabel() }}</span>
-      </div>
-
-      <p class="reason"><strong>Why this matters:</strong> {{ task().reason }}</p>
-
-      <div class="task-card__actions">
-        @if (actionLabel()) {
-          <button type="button" (click)="action.emit(task())">{{ actionLabel() }}</button>
-        }
-        <button type="button" class="secondary" (click)="view.emit(task())">View</button>
-      </div>
-    </article>
-  `
+  templateUrl: './task-card.component.html'
 })
 export class TaskCardComponent {
   task = input.required<TaskRecommendation>();
-  actionLabel = input<TaskRecommendation['actionLabel'] | ''>('');
+  actionLabel = input<string>('');
   action = output<TaskRecommendation>();
   view = output<TaskRecommendation>();
 

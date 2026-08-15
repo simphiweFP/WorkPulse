@@ -8,6 +8,16 @@ export interface ClientSummary {
   openTasks: number;
 }
 
+export interface ClientResponse {
+  id: string;
+  name: string;
+  contactName: string;
+  contactEmail: string;
+  phoneNumber: string;
+  projectCount: number;
+  openTaskCount: number;
+}
+
 export interface ClientDetails extends ClientSummary {
   description: string;
 }
