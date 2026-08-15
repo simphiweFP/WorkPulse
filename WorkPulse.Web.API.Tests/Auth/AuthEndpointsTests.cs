@@ -1,6 +1,6 @@
 using System.Net;
 using System.Net.Http.Json;
-using System.Text.Json;
+using WorkPulse.Web.API.Contracts.Responses;
 using WorkPulse.Web.API.Tests.Infrastructure;
 
 namespace WorkPulse.Web.API.Tests.Auth;
@@ -24,10 +24,11 @@ public class AuthEndpointsTests
 
         var response = await client.PostAsJsonAsync("/api/auth/register", payload);
 
-        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
-        var json = await response.Content.ReadFromJsonAsync<JsonElement>();
-        Assert.Equal("Developer", json.GetProperty("user").GetProperty("role").GetString());
-        Assert.False(string.IsNullOrWhiteSpace(json.GetProperty("token").GetString()));
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var auth = await response.Content.ReadFromJsonAsync<AuthResponse>();
+        Assert.NotNull(auth);
+        Assert.Equal("Developer", auth!.User.Role);
+        Assert.False(string.IsNullOrWhiteSpace(auth.Token));
     }
 
     [Fact]
@@ -49,7 +50,7 @@ public class AuthEndpointsTests
         var first = await client.PostAsJsonAsync("/api/auth/register", payload);
         var second = await client.PostAsJsonAsync("/api/auth/register", payload);
 
-        Assert.Equal(HttpStatusCode.Created, first.StatusCode);
+        Assert.Equal(HttpStatusCode.OK, first.StatusCode);
         Assert.Equal(HttpStatusCode.BadRequest, second.StatusCode);
     }
 
@@ -113,9 +114,10 @@ public class AuthEndpointsTests
 
         var response = await client.PostAsJsonAsync("/api/auth/register", payload);
 
-        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
-        var json = await response.Content.ReadFromJsonAsync<JsonElement>();
-        Assert.Equal("Developer", json.GetProperty("user").GetProperty("role").GetString());
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var auth = await response.Content.ReadFromJsonAsync<AuthResponse>();
+        Assert.NotNull(auth);
+        Assert.Equal("Developer", auth!.User.Role);
     }
 
     [Fact]
@@ -135,14 +137,15 @@ public class AuthEndpointsTests
         };
 
         var registerResponse = await client.PostAsJsonAsync("/api/auth/register", register);
-        Assert.Equal(HttpStatusCode.Created, registerResponse.StatusCode);
+        Assert.Equal(HttpStatusCode.OK, registerResponse.StatusCode);
 
         var response = await client.PostAsJsonAsync("/api/auth/login", new { email, password = "ValidPass123" });
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        var json = await response.Content.ReadFromJsonAsync<JsonElement>();
-        Assert.Equal("Developer", json.GetProperty("user").GetProperty("role").GetString());
-        Assert.False(string.IsNullOrWhiteSpace(json.GetProperty("token").GetString()));
+        var auth = await response.Content.ReadFromJsonAsync<AuthResponse>();
+        Assert.NotNull(auth);
+        Assert.Equal("Developer", auth!.User.Role);
+        Assert.False(string.IsNullOrWhiteSpace(auth.Token));
     }
 
     [Fact]

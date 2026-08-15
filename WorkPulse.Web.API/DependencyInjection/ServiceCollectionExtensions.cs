@@ -12,6 +12,10 @@ public static class ServiceCollectionExtensions
         mvcBuilder.AddApplicationPart(typeof(ClientsController).Assembly);
         mvcBuilder.AddApplicationPart(typeof(ProjectsController).Assembly);
         mvcBuilder.AddApplicationPart(typeof(TasksController).Assembly);
+        mvcBuilder.AddApplicationPart(typeof(SprintsController).Assembly);
+        mvcBuilder.AddApplicationPart(typeof(TodayController).Assembly);
+        mvcBuilder.AddApplicationPart(typeof(DashboardController).Assembly);
+        mvcBuilder.AddApplicationPart(typeof(UsersController).Assembly);
         return services;
     }
 }

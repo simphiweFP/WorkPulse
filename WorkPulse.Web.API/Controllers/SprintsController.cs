@@ -1,0 +1,84 @@
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using WorkPulse.Application.DTOs.Sprints;
+using WorkPulse.Application.Interfaces;
+using WorkPulse.Web.API.Contracts.Requests.Sprints;
+using WorkPulse.Web.API.Contracts.Responses.Sprints;
+
+namespace WorkPulse.Web.API.Controllers;
+
+[ApiController]
+[Route("api/[controller]")]
+[Authorize(Roles = "Admin")]
+public sealed class SprintsController : ControllerBase
+{
+    private readonly ISprintService _sprintService;
+
+    public SprintsController(ISprintService sprintService)
+    {
+        _sprintService = sprintService;
+    }
+
+    [HttpGet]
+    public async Task<ActionResult<IReadOnlyCollection<SprintResponse>>> GetAll(CancellationToken cancellationToken)
+    {
+        var sprints = await _sprintService.GetAllAsync(cancellationToken);
+        return Ok(sprints.Select(Map).ToArray());
+    }
+
+    [HttpGet("{id:guid}")]
+    public async Task<ActionResult<SprintResponse>> GetById(Guid id, CancellationToken cancellationToken)
+    {
+        var sprint = await _sprintService.GetByIdAsync(id, cancellationToken);
+        return Ok(Map(sprint));
+    }
+
+    [HttpPost]
+    public async Task<ActionResult<SprintResponse>> Create([FromBody] CreateSprintRequest request, CancellationToken cancellationToken)
+    {
+        var created = await _sprintService.CreateAsync(new CreateSprintRequestDto
+        {
+            Name = request.Name,
+            StartDate = request.StartDate,
+            EndDate = request.EndDate,
+            Status = request.Status
+        }, cancellationToken);
+
+        return CreatedAtAction(nameof(GetById), new { id = created.Id }, Map(created));
+    }
+
+    [HttpPut("{id:guid}")]
+    public async Task<ActionResult<SprintResponse>> Update(Guid id, [FromBody] UpdateSprintRequest request, CancellationToken cancellationToken)
+    {
+        await _sprintService.UpdateAsync(id, new UpdateSprintRequestDto
+        {
+            Name = request.Name,
+            StartDate = request.StartDate,
+            EndDate = request.EndDate,
+            Status = request.Status
+        }, cancellationToken);
+
+        var updated = await _sprintService.GetByIdAsync(id, cancellationToken);
+        return Ok(Map(updated));
+    }
+
+    [HttpDelete("{id:guid}")]
+    public async Task<IActionResult> Delete(Guid id, CancellationToken cancellationToken)
+    {
+        await _sprintService.DeleteAsync(id, cancellationToken);
+        return NoContent();
+    }
+
+    private static SprintResponse Map(SprintDto sprint) => new()
+    {
+        Id = sprint.Id,
+        Name = sprint.Name,
+        StartDate = sprint.StartDate,
+        EndDate = sprint.EndDate,
+        Status = sprint.Status,
+        CreatedAt = sprint.CreatedAt,
+        UpdatedAt = sprint.UpdatedAt,
+        TaskCount = sprint.TaskCount,
+        CompletedTaskCount = sprint.CompletedTaskCount
+    };
+}

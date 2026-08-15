@@ -13,8 +13,10 @@ public static class DependencyInjection
         services.AddScoped<WorkPulse.Application.Interfaces.IClientService, WorkPulse.Application.Services.ClientService>();
         services.AddScoped<IProjectService, WorkPulse.Application.Services.ProjectService>();
         services.AddScoped<ITaskService, WorkPulse.Application.Services.TaskService>();
+        services.AddScoped<ISprintService, WorkPulse.Application.Services.SprintService>();
         services.AddScoped<ITodayService, WorkPulse.Application.Services.TodayService>();
         services.AddScoped<ITodayTaskService, TodayTaskService>();
+        services.AddScoped<IAdminDashboardService, AdminDashboardService>();
 
         return services;
     }

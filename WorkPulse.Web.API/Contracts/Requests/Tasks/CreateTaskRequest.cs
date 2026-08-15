@@ -9,13 +9,15 @@ public sealed class CreateTaskRequest
     [Required]
     public Guid ProjectId { get; init; }
 
-    public string? AssignedUserId { get; init; }
+    public Guid? SprintId { get; init; }
+
+    public string? AssignedToUserId { get; init; }
 
     [Required]
     public string Title { get; init; } = string.Empty;
 
     public string Description { get; init; } = string.Empty;
-    public DateTime? DueDate { get; init; }
+    public DateTime? Deadline { get; init; }
     public TaskStatus Status { get; init; } = TaskStatus.Todo;
     public TaskPriority Priority { get; init; } = TaskPriority.Medium;
 }

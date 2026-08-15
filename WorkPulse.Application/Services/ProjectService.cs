@@ -86,7 +86,9 @@ public sealed class ProjectService : IProjectService
             Description = request.Description.Trim(),
             Status = request.Status,
             CreatedAt = existing.CreatedAt,
-            UpdatedAt = _clock.UtcNow
+            UpdatedAt = _clock.UtcNow,
+            OpenTaskCount = existing.OpenTaskCount,
+            CompletedTaskCount = existing.CompletedTaskCount
         }, cancellationToken);
     }
 
@@ -111,8 +113,8 @@ public sealed class ProjectService : IProjectService
         Status = project.Status,
         CreatedAt = project.CreatedAt,
         UpdatedAt = project.UpdatedAt,
-        OpenTaskCount = 0,
-        CompletedTaskCount = 0
+        OpenTaskCount = project.OpenTaskCount,
+        CompletedTaskCount = project.CompletedTaskCount
     };
 
     private static void ValidateStatus(WorkPulse.Domain.Enums.ProjectStatus status)

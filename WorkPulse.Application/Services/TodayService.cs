@@ -51,7 +51,7 @@ public sealed class TodayService : ITodayService
             {
                 Total = summary.Total,
                 Overdue = summary.Overdue,
-                DueToday = summary.DueToday,
+                DeadlineToday = summary.DueToday,
                 HighPriority = summary.HighPriority
             },
             Tasks = ranked.Select(MapTask).ToArray()
@@ -95,7 +95,7 @@ public sealed class TodayService : ITodayService
         ClientName = candidate.ClientName,
         ProjectName = candidate.ProjectName,
         Priority = candidate.Priority,
-        DueDate = candidate.DueDate,
+        Deadline = candidate.DueDate,
         Status = candidate.Status,
         RecommendationReason = candidate.RecommendationReason,
         Score = candidate.Score

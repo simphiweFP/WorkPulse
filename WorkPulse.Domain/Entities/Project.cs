@@ -13,7 +13,9 @@ public class Project
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 
     public Client Client { get; set; } = null!;
-    public ICollection<TaskItem> TaskItems { get; set; } = new List<TaskItem>();
+    public ICollection<TaskItem> Tasks { get; set; } = new List<TaskItem>();
+    public int OpenTaskCount { get; set; }
+    public int CompletedTaskCount { get; set; }
 
     public bool CanAcceptNewTasks() => Status == ProjectStatus.Active;
 }

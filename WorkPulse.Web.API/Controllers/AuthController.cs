@@ -24,10 +24,10 @@ public class AuthController : ControllerBase
         var result = await _identityService.RegisterAsync(request, cancellationToken);
         if (!result.Succeeded)
         {
-            return BadRequest(new { message = result.Error });
+            return BadRequest(new { message = result.Error ?? "Registration failed." });
         }
 
-        return CreatedAtAction(nameof(Me), null, result.Value);
+        return Ok(result.Value);
     }
 
     [HttpPost("login")]
@@ -37,7 +37,7 @@ public class AuthController : ControllerBase
         var result = await _identityService.LoginAsync(request, cancellationToken);
         if (!result.Succeeded)
         {
-            return Unauthorized(new { message = "Invalid email or password." });
+            return Unauthorized(new { message = result.Error ?? "Invalid email or password." });
         }
 
         return Ok(result.Value);
@@ -56,7 +56,7 @@ public class AuthController : ControllerBase
         var result = await _identityService.GetCurrentUserAsync(userId, cancellationToken);
         if (!result.Succeeded || result.Value is null)
         {
-            return NotFound(new { message = "User not found." });
+            return NotFound(new { message = result.Error ?? "User not found." });
         }
 
         return Ok(result.Value);

@@ -1,9 +1,12 @@
+using WorkPulse.Application.DTOs.Users;
 using WorkPulse.Domain.Entities;
 
 namespace WorkPulse.Application.Interfaces;
 
 public interface IUserRepository
 {
+    Task<IReadOnlyCollection<ApplicationUser>> GetAllAsync(CancellationToken cancellationToken = default);
+    Task<IReadOnlyCollection<DeveloperDto>> GetDevelopersAsync(CancellationToken cancellationToken = default);
     Task<ApplicationUser?> GetByIdAsync(string userId, CancellationToken cancellationToken = default);
     Task<ApplicationUser?> GetByEmailAsync(string email, CancellationToken cancellationToken = default);
     Task<bool> EmailExistsAsync(string email, CancellationToken cancellationToken = default);

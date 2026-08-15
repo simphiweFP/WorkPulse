@@ -68,9 +68,22 @@ public sealed class Version_202611130001_InitialSchema : Migration
         Create.Index("IX_Projects_ClientId").OnTable("Projects").OnColumn("ClientId").Ascending();
         Create.Index("IX_Projects_Status").OnTable("Projects").OnColumn("Status").Ascending();
 
+        Create.Table("Sprints")
+            .WithColumn("Id").AsGuid().PrimaryKey()
+            .WithColumn("Name").AsString(200).NotNullable()
+            .WithColumn("StartDate").AsDateTime2().NotNullable()
+            .WithColumn("EndDate").AsDateTime2().NotNullable()
+            .WithColumn("Status").AsInt32().NotNullable()
+            .WithColumn("CreatedAt").AsDateTime2().NotNullable()
+            .WithColumn("UpdatedAt").AsDateTime2().NotNullable();
+
+        Create.Index("IX_Sprints_Status").OnTable("Sprints").OnColumn("Status").Ascending();
+        Create.Index("IX_Sprints_Dates").OnTable("Sprints").OnColumn("StartDate").Ascending().OnColumn("EndDate").Ascending();
+
         Create.Table("Tasks")
             .WithColumn("Id").AsGuid().PrimaryKey()
             .WithColumn("ProjectId").AsGuid().NotNullable()
+            .WithColumn("SprintId").AsGuid().Nullable()
             .WithColumn("AssignedUserId").AsString(64).Nullable()
             .WithColumn("Title").AsString(200).NotNullable()
             .WithColumn("Description").AsString(2000).NotNullable()
@@ -84,11 +97,15 @@ public sealed class Version_202611130001_InitialSchema : Migration
         Create.ForeignKey("FK_Tasks_Projects_ProjectId")
             .FromTable("Tasks").ForeignColumn("ProjectId")
             .ToTable("Projects").PrimaryColumn("Id");
+        Create.ForeignKey("FK_Tasks_Sprints_SprintId")
+            .FromTable("Tasks").ForeignColumn("SprintId")
+            .ToTable("Sprints").PrimaryColumn("Id");
         Create.ForeignKey("FK_Tasks_Users_AssignedUserId")
             .FromTable("Tasks").ForeignColumn("AssignedUserId")
             .ToTable("Users").PrimaryColumn("Id");
 
         Create.Index("IX_Tasks_ProjectId").OnTable("Tasks").OnColumn("ProjectId").Ascending();
+        Create.Index("IX_Tasks_SprintId").OnTable("Tasks").OnColumn("SprintId").Ascending();
         Create.Index("IX_Tasks_AssignedUserId").OnTable("Tasks").OnColumn("AssignedUserId").Ascending();
         Create.Index("IX_Tasks_DueDate").OnTable("Tasks").OnColumn("DueDate").Ascending();
         Create.Index("IX_Tasks_Status").OnTable("Tasks").OnColumn("Status").Ascending();
@@ -98,6 +115,7 @@ public sealed class Version_202611130001_InitialSchema : Migration
     public override void Down()
     {
         Delete.Table("Tasks");
+        Delete.Table("Sprints");
         Delete.Table("Projects");
         Delete.Table("Clients");
         Delete.Table("UserRoles");

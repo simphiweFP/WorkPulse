@@ -1,0 +1,19 @@
+using System.ComponentModel.DataAnnotations;
+using WorkPulse.Domain.Enums;
+
+namespace WorkPulse.Web.API.Contracts.Requests.Sprints;
+
+public sealed class UpdateSprintRequest
+{
+    [Required]
+    public string Name { get; init; } = string.Empty;
+
+    [Required]
+    public DateTime StartDate { get; init; }
+
+    [Required]
+    public DateTime EndDate { get; init; }
+
+    [Required]
+    public SprintStatus Status { get; init; }
+}

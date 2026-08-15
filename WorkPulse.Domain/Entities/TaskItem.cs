@@ -6,12 +6,18 @@ public class TaskItem
 {
     public Guid Id { get; set; }
     public Guid ProjectId { get; set; }
+    public Guid? SprintId { get; set; }
+    public string SprintName { get; set; } = string.Empty;
+    public string ProjectName { get; set; } = string.Empty;
+    public Guid ClientId { get; set; }
+    public string ClientName { get; set; } = string.Empty;
     public string Title { get; set; } = string.Empty;
     public string Description { get; set; } = string.Empty;
     public TaskPriority Priority { get; set; } = TaskPriority.Medium;
     public DateTime? Deadline { get; set; }
     public Enums.TaskStatus Status { get; set; } = Enums.TaskStatus.Todo;
     public string? AssignedToUserId { get; set; }
+    public string AssignedUserName { get; set; } = string.Empty;
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
     public DateTime? CompletedAt { get; set; }

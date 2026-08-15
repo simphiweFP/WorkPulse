@@ -1,7 +1,8 @@
 using System.Net;
-using System.Text.Json;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+using WorkPulse.Application.Common.Exceptions;
 
 namespace WorkPulse.Web.API.Middleware;
 
@@ -30,6 +31,22 @@ public class GlobalExceptionMiddleware
                 context.Response.StatusCode = 499;
             }
         }
+        catch (NotFoundException ex)
+        {
+            await WriteProblemAsync(context, HttpStatusCode.NotFound, "Not found", ex.Message);
+        }
+        catch (ValidationException ex)
+        {
+            await WriteProblemAsync(context, HttpStatusCode.BadRequest, "Validation failed", ex.Message);
+        }
+        catch (UnauthorizedException ex)
+        {
+            await WriteProblemAsync(context, HttpStatusCode.Unauthorized, "Unauthorized", ex.Message);
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            await WriteProblemAsync(context, HttpStatusCode.Forbidden, "Forbidden", ex.Message);
+        }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Unhandled exception occurred while processing request.");
@@ -39,11 +56,28 @@ public class GlobalExceptionMiddleware
                 return;
             }
 
-            context.Response.StatusCode = (int)HttpStatusCode.InternalServerError;
-            context.Response.ContentType = "application/json";
-
-            var payload = JsonSerializer.Serialize(new { message = "An unexpected error occurred." });
-            await context.Response.WriteAsync(payload);
+            await WriteProblemAsync(context, HttpStatusCode.InternalServerError, "Server error", "Something went wrong while processing your request.");
         }
+    }
+
+    private static async Task WriteProblemAsync(HttpContext context, HttpStatusCode statusCode, string title, string detail)
+    {
+        if (context.Response.HasStarted)
+        {
+            return;
+        }
+
+        context.Response.StatusCode = (int)statusCode;
+        context.Response.ContentType = "application/problem+json";
+
+        var problem = new ProblemDetails
+        {
+            Status = (int)statusCode,
+            Title = title,
+            Detail = detail,
+            Type = $"https://httpstatuses.com/{(int)statusCode}"
+        };
+
+        await context.Response.WriteAsJsonAsync(problem);
     }
 }

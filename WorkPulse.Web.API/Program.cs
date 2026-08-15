@@ -1,10 +1,13 @@
 using System.Text;
+using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
 using WorkPulse.Integration.Identity.Authentication;
 using WorkPulse.Integration.Identity.DependencyInjection;
 using WorkPulse.Integration.Sql.DependencyInjection;
+using WorkPulse.Integration.Sql.Migrations;
+using WorkPulse.Integration.Sql.Seed;
 using WorkPulse.Web.API.DependencyInjection;
 using WorkPulse.Web.API.Middleware;
 
@@ -44,6 +47,11 @@ builder.Services.AddAuthentication(options =>
 
 builder.Services.AddAuthorization();
 
+builder.Services.AddControllers().AddJsonOptions(options =>
+{
+    options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
+});
+
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("Frontend", policy =>
@@ -66,9 +74,18 @@ builder.Services.AddSwaggerGen(options =>
 
 var app = builder.Build();
 
-if (!app.Environment.IsEnvironment("Testing"))
+if (app.Environment.IsDevelopment())
 {
-    await DatabaseInitializer.InitializeAsync(app.Services);
+    using var scope = app.Services.CreateScope();
+
+    var bootstrapper = scope.ServiceProvider.GetRequiredService<DatabaseBootstrapper>();
+    var migrationRunner = scope.ServiceProvider.GetRequiredService<MigrationRunner>();
+    var seeder = scope.ServiceProvider.GetRequiredService<IDatabaseSeeder>();
+    var startupLogger = scope.ServiceProvider.GetRequiredService<ILoggerFactory>().CreateLogger("WorkPulse.Startup");
+
+    await bootstrapper.EnsureDatabaseExistsAsync();
+    await migrationRunner.MigrateUpAsync();
+    await seeder.SeedAsync(startupLogger);
 }
 
 app.UseGlobalExceptionMiddleware();

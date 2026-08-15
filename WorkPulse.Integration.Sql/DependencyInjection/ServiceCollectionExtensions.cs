@@ -3,6 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 using FluentMigrator.Runner;
 using WorkPulse.Application.Interfaces;
 using WorkPulse.Integration.Sql.Connections;
+using WorkPulse.Integration.Sql.Migrations;
 using WorkPulse.Integration.Sql.Repositories;
 using WorkPulse.Integration.Sql.Seed;
 using WorkPulse.Integration.Sql.Transactions;
@@ -32,8 +33,11 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IClientRepository, ClientRepository>();
         services.AddScoped<IProjectRepository, ProjectRepository>();
         services.AddScoped<ITaskRepository, TaskRepository>();
+        services.AddScoped<ISprintRepository, SprintRepository>();
         services.AddScoped<IDashboardRepository, DashboardRepository>();
-        services.AddScoped<SqlSeeder>();
+        services.AddScoped<DatabaseBootstrapper>();
+        services.AddScoped<WorkPulse.Integration.Sql.Migrations.MigrationRunner>();
+        services.AddScoped<IDatabaseSeeder, SqlSeeder>();
 
         return services;
     }

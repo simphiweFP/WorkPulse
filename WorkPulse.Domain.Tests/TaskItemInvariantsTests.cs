@@ -27,6 +27,19 @@ public class TaskItemInvariantsTests
     }
 
     [Fact]
+    public void ChangeStatus_ToCompleted_ShouldStampCompletedAt()
+    {
+        var started = DateTime.UtcNow;
+        var completed = started.AddMinutes(5);
+        var task = new TaskItem { Status = TaskStatus.InProgress };
+
+        task.ChangeStatus(TaskStatus.Completed, completed);
+
+        Assert.Equal(TaskStatus.Completed, task.Status);
+        Assert.Equal(completed, task.CompletedAt);
+    }
+
+    [Fact]
     public void Project_ShouldOnlyAcceptNewTasks_WhenActive()
     {
         var activeProject = new Project { Status = ProjectStatus.Active };

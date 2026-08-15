@@ -7,7 +7,8 @@
       "launchBrowser": true,
       "applicationUrl":"http://localhost:5066",
       "environmentVariables": {
-        "ASPNETCORE_ENVIRONMENT": "Development"
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "Jwt__SecretKey": "WorkPulse_Development_Secret_Key_Change_Me_1234567890"
       }
     }
   }

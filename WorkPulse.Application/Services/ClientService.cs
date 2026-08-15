@@ -71,7 +71,9 @@ public sealed class ClientService : IClientService
             Description = request.Description.Trim(),
             CreatedAt = existing.CreatedAt,
             UpdatedAt = now,
-            IsDeleted = false
+            IsDeleted = false,
+            ProjectCount = existing.ProjectCount,
+            OpenTaskCount = existing.OpenTaskCount
         }, cancellationToken);
     }
 
@@ -96,8 +98,8 @@ public sealed class ClientService : IClientService
         Description = client.Description,
         CreatedAt = client.CreatedAt,
         UpdatedAt = client.UpdatedAt,
-        ProjectCount = 0,
-        OpenTaskCount = 0
+        ProjectCount = client.ProjectCount,
+        OpenTaskCount = client.OpenTaskCount
     };
 
     private static void Validate(string name, string email)

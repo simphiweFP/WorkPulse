@@ -16,10 +16,23 @@ public sealed class ClientRepository : IClientRepository
     public async Task<IReadOnlyCollection<Client>> GetAllAsync(CancellationToken cancellationToken = default)
     {
         const string sql = """
-                           SELECT Id, Name, ContactName, ContactEmail, PhoneNumber, Description, CreatedAt, UpdatedAt, IsDeleted
-                           FROM Clients
-                           WHERE IsDeleted = 0
-                           ORDER BY CreatedAt DESC
+                           SELECT c.Id,
+                                  c.Name,
+                                  c.ContactName,
+                                  c.ContactEmail,
+                                  c.PhoneNumber,
+                                  c.Description,
+                                  c.CreatedAt,
+                                  c.UpdatedAt,
+                                  c.IsDeleted,
+                                  (SELECT COUNT(1) FROM Projects p WHERE p.ClientId = c.Id) AS ProjectCount,
+                                  (SELECT COUNT(1)
+                                   FROM Tasks t
+                                   INNER JOIN Projects p2 ON p2.Id = t.ProjectId
+                                   WHERE p2.ClientId = c.Id AND t.Status <> 3) AS OpenTaskCount
+                           FROM Clients c
+                           WHERE c.IsDeleted = 0
+                           ORDER BY c.CreatedAt DESC
                            """;
 
         await using var connection = (Microsoft.Data.SqlClient.SqlConnection)_connectionFactory.CreateConnection();
@@ -30,9 +43,22 @@ public sealed class ClientRepository : IClientRepository
     public async Task<Client?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
         const string sql = """
-                           SELECT Id, Name, ContactName, ContactEmail, PhoneNumber, Description, CreatedAt, UpdatedAt, IsDeleted
-                           FROM Clients
-                           WHERE Id = @Id AND IsDeleted = 0
+                           SELECT c.Id,
+                                  c.Name,
+                                  c.ContactName,
+                                  c.ContactEmail,
+                                  c.PhoneNumber,
+                                  c.Description,
+                                  c.CreatedAt,
+                                  c.UpdatedAt,
+                                  c.IsDeleted,
+                                  (SELECT COUNT(1) FROM Projects p WHERE p.ClientId = c.Id) AS ProjectCount,
+                                  (SELECT COUNT(1)
+                                   FROM Tasks t
+                                   INNER JOIN Projects p2 ON p2.Id = t.ProjectId
+                                   WHERE p2.ClientId = c.Id AND t.Status <> 3) AS OpenTaskCount
+                           FROM Clients c
+                           WHERE c.Id = @Id AND c.IsDeleted = 0
                            """;
 
         await using var connection = (Microsoft.Data.SqlClient.SqlConnection)_connectionFactory.CreateConnection();

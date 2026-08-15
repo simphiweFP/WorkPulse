@@ -11,13 +11,15 @@ public sealed class TaskService : ITaskService
 {
     private readonly ITaskRepository _taskRepository;
     private readonly IProjectRepository _projectRepository;
+    private readonly ISprintRepository _sprintRepository;
     private readonly IUserRepository _userRepository;
     private readonly IClock _clock;
 
-    public TaskService(ITaskRepository taskRepository, IProjectRepository projectRepository, IUserRepository userRepository, IClock clock)
+    public TaskService(ITaskRepository taskRepository, IProjectRepository projectRepository, ISprintRepository sprintRepository, IUserRepository userRepository, IClock clock)
     {
         _taskRepository = taskRepository;
         _projectRepository = projectRepository;
+        _sprintRepository = sprintRepository;
         _userRepository = userRepository;
         _clock = clock;
     }
@@ -36,7 +38,7 @@ public sealed class TaskService : ITaskService
 
     public async Task<IReadOnlyCollection<TaskDto>> GetMyTasksAsync(string userId, GetMyTasksFilterDto filter, CancellationToken cancellationToken = default)
     {
-        var items = await _taskRepository.GetMyTasksAsync(userId, filter.Status, filter.Priority, filter.ProjectId, filter.DueDate, cancellationToken);
+        var items = await _taskRepository.GetMyTasksAsync(userId, filter.Status, filter.Priority, filter.ProjectId, filter.Deadline, cancellationToken);
         return items.Select(Map).ToArray();
     }
 
@@ -55,17 +57,20 @@ public sealed class TaskService : ITaskService
             throw new ValidationException("Closed projects cannot receive new tasks.");
         }
 
+        await ValidateSprintAsync(request.SprintId, cancellationToken);
+
         var now = _clock.UtcNow;
         var entity = new TaskItem
         {
             Id = Guid.NewGuid(),
             ProjectId = request.ProjectId,
+            SprintId = request.SprintId,
             Title = request.Title.Trim(),
             Description = request.Description.Trim(),
-            Deadline = request.DueDate,
+            Deadline = request.Deadline,
             Status = request.Status,
             Priority = request.Priority,
-            AssignedToUserId = request.AssignedUserId,
+            AssignedToUserId = request.AssignedToUserId,
             CreatedAt = now,
             UpdatedAt = now,
             CompletedAt = null
@@ -96,19 +101,26 @@ public sealed class TaskService : ITaskService
             throw new ValidationException("Closed projects cannot receive new tasks.");
         }
 
+        await ValidateSprintAsync(request.SprintId, cancellationToken);
+
         await _taskRepository.UpdateAsync(new TaskItem
         {
             Id = id,
             ProjectId = request.ProjectId,
+            SprintId = request.SprintId,
             Title = request.Title.Trim(),
             Description = request.Description.Trim(),
-            Deadline = request.DueDate,
+            Deadline = request.Deadline,
             Status = request.Status,
             Priority = request.Priority,
-            AssignedToUserId = request.AssignedUserId,
+            AssignedToUserId = request.AssignedToUserId,
             CreatedAt = existing.CreatedAt,
             UpdatedAt = _clock.UtcNow,
-            CompletedAt = request.Status == TaskStatus.Completed ? existing.CompletedAt ?? _clock.UtcNow : existing.CompletedAt
+            CompletedAt = request.Status == TaskStatus.Completed ? existing.CompletedAt ?? _clock.UtcNow : existing.CompletedAt,
+            ProjectName = existing.ProjectName,
+            ClientId = existing.ClientId,
+            ClientName = existing.ClientName,
+            AssignedUserName = existing.AssignedUserName
         }, cancellationToken);
     }
 
@@ -201,20 +213,42 @@ public sealed class TaskService : ITaskService
     {
         Id = task.Id,
         ProjectId = task.ProjectId,
+        SprintId = task.SprintId,
+        SprintName = string.IsNullOrWhiteSpace(task.SprintName) ? (task.SprintId.HasValue ? string.Empty : "Backlog") : task.SprintName,
+        ProjectName = task.ProjectName,
         Title = task.Title,
         Description = task.Description,
-        DueDate = task.Deadline,
+        Deadline = task.Deadline,
         Status = task.Status,
         Priority = task.Priority,
-        AssignedUserId = task.AssignedToUserId,
+        AssignedToUserId = task.AssignedToUserId,
         CreatedAt = task.CreatedAt,
         UpdatedAt = task.UpdatedAt,
         CompletedAt = task.CompletedAt,
-        ProjectName = string.Empty,
-        ClientId = Guid.Empty,
-        ClientName = string.Empty,
-        AssignedUserName = string.Empty
+        ClientId = task.ClientId,
+        ClientName = task.ClientName,
+        AssignedUserName = task.AssignedUserName,
+        RecommendationReason = task.IsCompleted ? string.Empty : task.Title
     };
+
+    private async Task ValidateSprintAsync(Guid? sprintId, CancellationToken cancellationToken)
+    {
+        if (!sprintId.HasValue)
+        {
+            return;
+        }
+
+        var sprint = await _sprintRepository.GetByIdAsync(sprintId.Value, cancellationToken);
+        if (sprint is null)
+        {
+            throw new NotFoundException($"Sprint '{sprintId}' was not found.");
+        }
+
+        if (sprint.Status == SprintStatus.Completed)
+        {
+            throw new ValidationException("Completed sprints cannot accept new tasks.");
+        }
+    }
 
     private static void ValidateEnums(TaskStatus status, TaskPriority priority)
     {

@@ -12,7 +12,7 @@ public sealed class TodayTaskDto
     public string ClientName { get; init; } = string.Empty;
     public string Title { get; init; } = string.Empty;
     public string Description { get; init; } = string.Empty;
-    public DateTime? DueDate { get; init; }
+    public DateTime? Deadline { get; init; }
     public TaskStatus Status { get; init; }
     public TaskPriority Priority { get; init; }
     public string RecommendationReason { get; init; } = string.Empty;

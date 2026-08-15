@@ -46,7 +46,7 @@ public sealed class TodayController : ControllerBase
         {
             Total = dashboard.Summary.Total,
             Overdue = dashboard.Summary.Overdue,
-            DueToday = dashboard.Summary.DueToday,
+            DeadlineToday = dashboard.Summary.DeadlineToday,
             HighPriority = dashboard.Summary.HighPriority
         },
         Tasks = dashboard.Tasks.Select(task => new TodayTaskResponse
@@ -58,7 +58,7 @@ public sealed class TodayController : ControllerBase
             ClientName = task.ClientName,
             Title = task.Title,
             Description = task.Description,
-            DueDate = task.DueDate,
+            Deadline = task.Deadline,
             Status = task.Status,
             Priority = task.Priority,
             RecommendationReason = task.RecommendationReason,

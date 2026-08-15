@@ -1,4 +1,5 @@
 using Dapper;
+using WorkPulse.Application.DTOs.Users;
 using WorkPulse.Application.Interfaces;
 using WorkPulse.Domain.Entities;
 
@@ -11,6 +12,50 @@ public sealed class UserRepository : IUserRepository
     public UserRepository(IDbConnectionFactory connectionFactory)
     {
         _connectionFactory = connectionFactory;
+    }
+
+    public async Task<IReadOnlyCollection<ApplicationUser>> GetAllAsync(CancellationToken cancellationToken = default)
+    {
+        const string sql = """
+                           SELECT Id, FirstName, LastName, Email, UserName, PasswordHash, CreatedAt, UpdatedAt
+                           FROM Users
+                           WHERE IsDeleted = 0
+                           ORDER BY LastName, FirstName
+                           """;
+
+        await using var connection = (Microsoft.Data.SqlClient.SqlConnection)_connectionFactory.CreateConnection();
+        var users = await connection.QueryAsync<ApplicationUser>(new CommandDefinition(sql, cancellationToken: cancellationToken));
+        return users.ToArray();
+    }
+
+    public async Task<IReadOnlyCollection<DeveloperDto>> GetDevelopersAsync(CancellationToken cancellationToken = default)
+    {
+        const string sql = """
+                           SELECT u.Id,
+                                  u.FirstName,
+                                  u.LastName,
+                                  CONCAT(u.FirstName, ' ', u.LastName) AS FullName,
+                                  u.Email,
+                                  SUM(CASE WHEN t.Status <> @Completed THEN 1 ELSE 0 END) AS ActiveTaskCount,
+                                  SUM(CASE WHEN t.Status = @InProgress THEN 1 ELSE 0 END) AS InProgressTaskCount,
+                                  SUM(CASE WHEN t.Status = @Completed THEN 1 ELSE 0 END) AS CompletedTaskCount
+                           FROM Users u
+                           INNER JOIN UserRoles ur ON ur.UserId = u.Id
+                           INNER JOIN Roles r ON r.Id = ur.RoleId AND r.Name IN @AssignableRoles
+                           LEFT JOIN Tasks t ON t.AssignedUserId = u.Id
+                           WHERE u.IsDeleted = 0
+                           GROUP BY u.Id, u.FirstName, u.LastName, u.Email
+                           ORDER BY u.LastName, u.FirstName
+                           """;
+
+        await using var connection = (Microsoft.Data.SqlClient.SqlConnection)_connectionFactory.CreateConnection();
+        var developers = await connection.QueryAsync<DeveloperDto>(new CommandDefinition(sql, new
+        {
+            AssignableRoles = new[] { "Developer", "Admin" },
+            Completed = (int)WorkPulse.Domain.Enums.TaskStatus.Completed,
+            InProgress = (int)WorkPulse.Domain.Enums.TaskStatus.InProgress
+        }, cancellationToken: cancellationToken));
+        return developers.ToArray();
     }
 
     public async Task<ApplicationUser?> GetByIdAsync(string userId, CancellationToken cancellationToken = default)
@@ -68,7 +113,7 @@ public sealed class UserRepository : IUserRepository
                 user.FirstName,
                 user.LastName,
                 user.Email,
-                UserName = user.UserName ?? user.Email,
+                UserName = user.Email,
                 PasswordHash = passwordHash,
                 user.CreatedAt,
                 user.UpdatedAt

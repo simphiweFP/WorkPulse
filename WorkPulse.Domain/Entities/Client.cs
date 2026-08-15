@@ -11,6 +11,6 @@ public class Client
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
     public bool IsDeleted { get; set; }
-
-    public ICollection<Project> Projects { get; set; } = new List<Project>();
+    public int ProjectCount { get; set; }
+    public int OpenTaskCount { get; set; }
 }

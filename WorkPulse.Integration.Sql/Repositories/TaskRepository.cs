@@ -9,7 +9,7 @@ namespace WorkPulse.Integration.Sql.Repositories;
 public sealed class TaskRepository : ITaskRepository
 {
     private readonly IDbConnectionFactory _connectionFactory;
-    private const string TaskSelectColumns = "Id, ProjectId, AssignedUserId AS AssignedToUserId, Title, Description, DueDate AS Deadline, Status, Priority, CreatedAt, UpdatedAt, CompletedAt";
+    private const string TaskSelectColumns = "t.Id, t.ProjectId, t.SprintId, COALESCE(s.Name, '') AS SprintName, p.Name AS ProjectName, c.Id AS ClientId, c.Name AS ClientName, t.AssignedUserId AS AssignedToUserId, COALESCE(CONCAT(u.FirstName, ' ', u.LastName), '') AS AssignedUserName, t.Title, t.Description, t.DueDate AS Deadline, t.Status, t.Priority, t.CreatedAt, t.UpdatedAt, t.CompletedAt";
 
     public TaskRepository(IDbConnectionFactory connectionFactory)
     {
@@ -20,8 +20,12 @@ public sealed class TaskRepository : ITaskRepository
     {
         var sql = $"""
                            SELECT {TaskSelectColumns}
-                           FROM Tasks
-                           ORDER BY CreatedAt DESC
+                           FROM Tasks t
+                           INNER JOIN Projects p ON p.Id = t.ProjectId
+                           INNER JOIN Clients c ON c.Id = p.ClientId
+                            LEFT JOIN Sprints s ON s.Id = t.SprintId
+                           LEFT JOIN Users u ON u.Id = t.AssignedUserId
+                           ORDER BY t.CreatedAt DESC
                            """;
 
         await using var connection = (Microsoft.Data.SqlClient.SqlConnection)_connectionFactory.CreateConnection();
@@ -33,8 +37,12 @@ public sealed class TaskRepository : ITaskRepository
     {
         var sql = $"""
                            SELECT {TaskSelectColumns}
-                           FROM Tasks
-                           WHERE Id = @Id
+                           FROM Tasks t
+                           INNER JOIN Projects p ON p.Id = t.ProjectId
+                           INNER JOIN Clients c ON c.Id = p.ClientId
+                            LEFT JOIN Sprints s ON s.Id = t.SprintId
+                           LEFT JOIN Users u ON u.Id = t.AssignedUserId
+                           WHERE t.Id = @Id
                            """;
 
         await using var connection = (Microsoft.Data.SqlClient.SqlConnection)_connectionFactory.CreateConnection();
@@ -45,9 +53,13 @@ public sealed class TaskRepository : ITaskRepository
     {
         var sql = $"""
                            SELECT {TaskSelectColumns}
-                           FROM Tasks
-                           WHERE ProjectId = @ProjectId
-                           ORDER BY CreatedAt DESC
+                           FROM Tasks t
+                           INNER JOIN Projects p ON p.Id = t.ProjectId
+                           INNER JOIN Clients c ON c.Id = p.ClientId
+                            LEFT JOIN Sprints s ON s.Id = t.SprintId
+                           LEFT JOIN Users u ON u.Id = t.AssignedUserId
+                           WHERE t.ProjectId = @ProjectId
+                           ORDER BY t.CreatedAt DESC
                            """;
 
         await using var connection = (Microsoft.Data.SqlClient.SqlConnection)_connectionFactory.CreateConnection();
@@ -55,35 +67,39 @@ public sealed class TaskRepository : ITaskRepository
         return items.ToArray();
     }
 
-    public async Task<IReadOnlyCollection<TaskItem>> GetMyTasksAsync(string userId, TaskStatus? status, TaskPriority? priority, Guid? projectId, DateTime? dueDate, CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyCollection<TaskItem>> GetMyTasksAsync(string userId, TaskStatus? status, TaskPriority? priority, Guid? projectId, DateTime? deadline, CancellationToken cancellationToken = default)
     {
         var sql = $"""
                   SELECT {TaskSelectColumns}
-                  FROM Tasks
-                  WHERE AssignedUserId = @UserId
+                  FROM Tasks t
+                  INNER JOIN Projects p ON p.Id = t.ProjectId
+                  INNER JOIN Clients c ON c.Id = p.ClientId
+                  LEFT JOIN Sprints s ON s.Id = t.SprintId
+                  LEFT JOIN Users u ON u.Id = t.AssignedUserId
+                  WHERE t.AssignedUserId = @UserId
                   """;
 
         if (status.HasValue)
         {
-            sql += " AND Status = @Status";
+            sql += " AND t.Status = @Status";
         }
 
         if (priority.HasValue)
         {
-            sql += " AND Priority = @Priority";
+            sql += " AND t.Priority = @Priority";
         }
 
         if (projectId.HasValue)
         {
-            sql += " AND ProjectId = @ProjectId";
+            sql += " AND t.ProjectId = @ProjectId";
         }
 
-        if (dueDate.HasValue)
+        if (deadline.HasValue)
         {
-            sql += " AND CAST(DueDate AS date) = CAST(@DueDate AS date)";
+            sql += " AND CAST(t.DueDate AS date) = CAST(@Deadline AS date)";
         }
 
-        sql += " ORDER BY DueDate";
+        sql += " ORDER BY t.DueDate";
 
         await using var connection = (Microsoft.Data.SqlClient.SqlConnection)_connectionFactory.CreateConnection();
         var items = await connection.QueryAsync<TaskItem>(new CommandDefinition(sql, new
@@ -92,7 +108,7 @@ public sealed class TaskRepository : ITaskRepository
             Status = (int?)status,
             Priority = (int?)priority,
             ProjectId = projectId,
-            DueDate = dueDate
+            Deadline = deadline
         }, cancellationToken: cancellationToken));
 
         return items.ToArray();
@@ -101,8 +117,8 @@ public sealed class TaskRepository : ITaskRepository
     public async Task CreateAsync(TaskItem taskItem, CancellationToken cancellationToken = default)
     {
         const string sql = """
-                           INSERT INTO Tasks (Id, ProjectId, AssignedUserId, Title, Description, DueDate, Status, Priority, CreatedAt, UpdatedAt, CompletedAt)
-                           VALUES (@Id, @ProjectId, @AssignedUserId, @Title, @Description, @DueDate, @Status, @Priority, @CreatedAt, @UpdatedAt, @CompletedAt)
+                           INSERT INTO Tasks (Id, ProjectId, SprintId, AssignedUserId, Title, Description, DueDate, Status, Priority, CreatedAt, UpdatedAt, CompletedAt)
+                           VALUES (@Id, @ProjectId, @SprintId, @AssignedUserId, @Title, @Description, @DueDate, @Status, @Priority, @CreatedAt, @UpdatedAt, @CompletedAt)
                            """;
 
         await using var connection = (Microsoft.Data.SqlClient.SqlConnection)_connectionFactory.CreateConnection();
@@ -110,6 +126,7 @@ public sealed class TaskRepository : ITaskRepository
         {
             taskItem.Id,
             taskItem.ProjectId,
+            SprintId = taskItem.SprintId,
             AssignedUserId = taskItem.AssignedToUserId,
             taskItem.Title,
             taskItem.Description,
@@ -127,6 +144,7 @@ public sealed class TaskRepository : ITaskRepository
         const string sql = """
                            UPDATE Tasks
                            SET ProjectId = @ProjectId,
+                               SprintId = @SprintId,
                                AssignedUserId = @AssignedUserId,
                                Title = @Title,
                                Description = @Description,
@@ -143,6 +161,7 @@ public sealed class TaskRepository : ITaskRepository
         {
             taskItem.Id,
             taskItem.ProjectId,
+            SprintId = taskItem.SprintId,
             AssignedUserId = taskItem.AssignedToUserId,
             taskItem.Title,
             taskItem.Description,

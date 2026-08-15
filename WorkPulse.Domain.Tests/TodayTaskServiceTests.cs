@@ -37,6 +37,19 @@ public class TodayTaskServiceTests
     }
 
     [Fact]
+    public void ShouldRankCriticalTaskCorrectly()
+    {
+        var ranked = _service.RankDeveloperTasks([
+            Task("low-future", 5, TaskPriority.Low),
+            Task("critical-today", 0, TaskPriority.Critical),
+            Task("high-tomorrow", 1, TaskPriority.High)
+        ], Today);
+
+        Assert.Equal("critical-today", ranked.First().Title);
+        Assert.Equal("Critical priority and due today", ranked.First().RecommendationReason);
+    }
+
+    [Fact]
     public void ShouldExcludeCompletedTask()
     {
         var ranked = _service.RankDeveloperTasks([Task("done", 0, TaskPriority.Critical, TaskStatus.Completed)], Today);

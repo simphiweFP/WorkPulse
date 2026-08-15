@@ -25,6 +25,20 @@ WorkPulse is a task and delivery planning system for client work. It separates c
 - `WorkPulse.Web.Main/` - ASP.NET Core backend startup and composition root
 - `*.Tests/` - meaningful test projects for domain, SQL, API, and host behavior
 
+## API Mapping
+- Admin Dashboard → `GET /api/dashboard/admin`
+- Developer Today → `GET /api/tasks/today`
+- Clients → `GET /api/clients`
+- Project details → `GET /api/projects/{id}`
+- Tasks → `GET /api/tasks`
+- My Tasks → `GET /api/tasks/my`
+- Team / Developers → `GET /api/users/developers`
+- Login → `POST /api/auth/login`
+- Register → `POST /api/auth/register`
+- Session restore → `GET /api/auth/me`
+
+Primary Today endpoint for the developer home screen is `GET /api/tasks/today`.
+
 ## Architecture
 - `WorkPulse.Web.Main` is the backend startup and composition root.
 - `WorkPulse.Web.API` contains HTTP behavior, routing, validation boundaries, and authorization.
@@ -75,10 +89,12 @@ Backend:
 dotnet restore
 dotnet user-secrets init --project WorkPulse.Web.Main
 dotnet user-secrets set --project WorkPulse.Web.Main "Jwt:SecretKey" "replace-with-a-local-development-secret"
+dotnet user-secrets set --project WorkPulse.Web.Main "DevelopmentSeed:AdminPassword" "WorkPulseAdmin123!"
 dotnet run --project WorkPulse.Web.Main
 ```
 
 Set `Jwt:SecretKey` locally through user secrets before starting the host.
+Set `DevelopmentSeed:AdminPassword` locally so the seeded admin can authenticate.
 
 The backend applies database migrations and development seeding on startup.
 
@@ -96,9 +112,13 @@ These are local development/demo credentials only.
 - Developer: `developer@workpulse.local` / `WorkPulseDev123!`
 - Developer 2: `developer2@workpulse.local` / `WorkPulseDev234!`
 
+
 ## Tests
 Backend and solution tests:
 ```sh
+dotnet clean WorkPulse.slnx
+dotnet restore WorkPulse.slnx
+dotnet build WorkPulse.slnx
 dotnet test WorkPulse.slnx
 ```
 

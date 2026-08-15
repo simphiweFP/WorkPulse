@@ -16,8 +16,16 @@ public sealed class ProjectRepository : IProjectRepository
     public async Task<IReadOnlyCollection<Project>> GetAllAsync(CancellationToken cancellationToken = default)
     {
         const string sql = """
-                           SELECT Id, ClientId, Name, Description, Status, CreatedAt, UpdatedAt
-                           FROM Projects
+                           SELECT p.Id,
+                                  p.ClientId,
+                                  p.Name,
+                                  p.Description,
+                                  p.Status,
+                                  p.CreatedAt,
+                                  p.UpdatedAt,
+                                  (SELECT COUNT(1) FROM Tasks t WHERE t.ProjectId = p.Id AND t.Status <> 3) AS OpenTaskCount,
+                                  (SELECT COUNT(1) FROM Tasks t WHERE t.ProjectId = p.Id AND t.Status = 3) AS CompletedTaskCount
+                           FROM Projects p
                            ORDER BY Name
                            """;
 
@@ -29,9 +37,17 @@ public sealed class ProjectRepository : IProjectRepository
     public async Task<IReadOnlyCollection<Project>> GetByClientIdAsync(Guid clientId, CancellationToken cancellationToken = default)
     {
         const string sql = """
-                           SELECT Id, ClientId, Name, Description, Status, CreatedAt, UpdatedAt
-                           FROM Projects
-                           WHERE ClientId = @ClientId
+                           SELECT p.Id,
+                                  p.ClientId,
+                                  p.Name,
+                                  p.Description,
+                                  p.Status,
+                                  p.CreatedAt,
+                                  p.UpdatedAt,
+                                  (SELECT COUNT(1) FROM Tasks t WHERE t.ProjectId = p.Id AND t.Status <> 3) AS OpenTaskCount,
+                                  (SELECT COUNT(1) FROM Tasks t WHERE t.ProjectId = p.Id AND t.Status = 3) AS CompletedTaskCount
+                           FROM Projects p
+                           WHERE p.ClientId = @ClientId
                            ORDER BY Name
                            """;
 
@@ -43,9 +59,17 @@ public sealed class ProjectRepository : IProjectRepository
     public async Task<Project?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
         const string sql = """
-                           SELECT Id, ClientId, Name, Description, Status, CreatedAt, UpdatedAt
-                           FROM Projects
-                           WHERE Id = @Id
+                           SELECT p.Id,
+                                  p.ClientId,
+                                  p.Name,
+                                  p.Description,
+                                  p.Status,
+                                  p.CreatedAt,
+                                  p.UpdatedAt,
+                                  (SELECT COUNT(1) FROM Tasks t WHERE t.ProjectId = p.Id AND t.Status <> 3) AS OpenTaskCount,
+                                  (SELECT COUNT(1) FROM Tasks t WHERE t.ProjectId = p.Id AND t.Status = 3) AS CompletedTaskCount
+                           FROM Projects p
+                           WHERE p.Id = @Id
                            """;
 
         await using var connection = (Microsoft.Data.SqlClient.SqlConnection)_connectionFactory.CreateConnection();
