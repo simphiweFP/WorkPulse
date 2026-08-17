@@ -2,7 +2,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Observable, map } from 'rxjs';
 import { apiConfig } from './api.config';
-import { TaskActionResponse, TaskPriority, TaskStatus, TaskRecommendation } from '../../shared/models/task.models';
+import { TaskActionResponse, TaskPriority, TaskStatus, TaskType, TaskRecommendation } from '../../shared/models/task.models';
 import { TaskAdminSummary, TaskAssigneeOption, TaskUpsertRequest } from '../models/task-admin.models';
 
 export interface TaskFilter {
@@ -18,6 +18,7 @@ interface TaskResponse {
   id: string;
   projectId: string;
   sprintId?: string | null;
+  sprintOrder?: number | null;
   sprintName?: string;
   projectName: string;
   clientId: string;
@@ -26,6 +27,8 @@ interface TaskResponse {
   assignedUserName: string;
   title: string;
   description: string;
+  type: TaskType;
+  storyPoints: number;
   deadline?: string | null;
   status: TaskStatus;
   priority: TaskPriority;
@@ -73,17 +76,33 @@ export class TaskService {
     return this.http.get<TaskResponse[]>(`${apiConfig.apiBaseUrl}/tasks`, { params }).pipe(map((tasks) => tasks.map((task) => this.toAdminSummary(task))));
   }
 
+  getBacklog(): Observable<TaskAdminSummary[]> {
+    return this.http.get<TaskResponse[]>(`${apiConfig.apiBaseUrl}/tasks/backlog`).pipe(
+      map((tasks) => tasks.map((task) => this.toAdminSummary(task)))
+    );
+  }
+
+  getDeveloperBacklog(): Observable<TaskAdminSummary[]> {
+    return this.http.get<TaskResponse[]>(`${apiConfig.apiBaseUrl}/tasks/my`).pipe(
+      map((tasks) => tasks.map((task) => this.toAdminSummary(task)))
+    );
+  }
+
   getTask(id: string): Observable<TaskResponse> {
     return this.http.get<TaskResponse>(`${apiConfig.apiBaseUrl}/tasks/${id}`);
   }
 
   createTask(request: TaskUpsertRequest): Observable<TaskAdminSummary> {
     return this.http.post<TaskResponse>(`${apiConfig.apiBaseUrl}/tasks`, {
+      clientId: request.clientId,
       projectId: request.projectId,
-      sprintId: request.sprintId ?? null,
+      sprintId: this.normalizeSprintId(request.sprintId),
+      type: request.type,
       title: request.title,
       description: request.description,
+      storyPoints: request.storyPoints,
       priority: request.priority,
+      status: request.status,
       assignedToUserId: request.assigneeId,
       deadline: request.deadline
     }).pipe(map((task) => this.toAdminSummary(task)));
@@ -91,11 +110,15 @@ export class TaskService {
 
   updateTask(id: string, request: TaskUpsertRequest): Observable<TaskAdminSummary> {
     return this.http.put<TaskResponse>(`${apiConfig.apiBaseUrl}/tasks/${id}`, {
+      clientId: request.clientId,
       projectId: request.projectId,
-      sprintId: request.sprintId ?? null,
+      sprintId: this.normalizeSprintId(request.sprintId),
+      type: request.type,
       title: request.title,
       description: request.description,
+      storyPoints: request.storyPoints,
       priority: request.priority,
+      status: request.status,
       assignedToUserId: request.assigneeId,
       deadline: request.deadline
     }).pipe(map((task) => this.toAdminSummary(task)));
@@ -125,16 +148,25 @@ export class TaskService {
     return task.sprintName ?? (task.sprintId ? 'Sprint' : 'Backlog');
   }
 
+  private normalizeSprintId(sprintId: string | null | undefined): string | null {
+    return sprintId?.trim() ? sprintId : null;
+  }
+
   private toAdminSummary(task: TaskResponse): TaskAdminSummary {
     return {
       id: task.id,
       clientId: task.clientId,
       projectId: task.projectId,
       title: task.title,
+      description: task.description,
+      type: task.type,
+      storyPoints: task.storyPoints,
+      sprintOrder: task.sprintOrder,
       clientName: task.clientName,
       projectName: task.projectName,
       sprintId: task.sprintId,
       sprintName: this.resolveSprintName(task),
+      assigneeId: task.assignedToUserId,
       assigneeName: task.assignedUserName,
       priority: task.priority,
       deadline: task.deadline ?? task.createdAt,
@@ -148,6 +180,9 @@ export class TaskService {
       title: task.title,
       clientName: task.clientName,
       projectName: task.projectName,
+      type: task.type,
+      sprintOrder: task.sprintOrder,
+      storyPoints: task.storyPoints,
       sprintId: task.sprintId,
       sprintName: this.resolveSprintName(task),
       priority: task.priority,

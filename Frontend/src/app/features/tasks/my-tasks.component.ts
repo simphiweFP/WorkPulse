@@ -1,49 +1,66 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit, inject, signal } from '@angular/core';
-import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
+import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { catchError, finalize, of } from 'rxjs';
-import { TaskRecommendation } from '../../shared/models/task.models';
-import { TaskService } from '../../core/services/task.service';
+import { AuthService } from '../../core/auth/auth.service';
 import { EmptyStateComponent } from '../../shared/components/empty-state/empty-state.component';
 import { ErrorStateComponent } from '../../shared/components/error-state/error-state.component';
 import { LoadingStateComponent } from '../../shared/components/loading-state/loading-state.component';
-import { PageHeaderComponent } from '../../shared/components/page-header/page-header.component';
 import { PriorityBadgeComponent } from '../../shared/components/priority-badge/priority-badge.component';
 import { StatusBadgeComponent } from '../../shared/components/status-badge/status-badge.component';
+import { TaskRecommendation } from '../../shared/models/task.models';
+import { TaskService } from '../../core/services/task.service';
 
 @Component({
   selector: 'app-my-tasks',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, PageHeaderComponent, LoadingStateComponent, EmptyStateComponent, ErrorStateComponent, PriorityBadgeComponent, StatusBadgeComponent],
+  imports: [CommonModule, LoadingStateComponent, EmptyStateComponent, ErrorStateComponent, PriorityBadgeComponent, StatusBadgeComponent],
   templateUrl: './my-tasks.component.html',
   styleUrl: './my-tasks.component.scss'
 })
 export class MyTasksComponent implements OnInit {
   private readonly taskService = inject(TaskService);
-  private readonly fb = inject(FormBuilder);
-  private readonly router = inject(Router);
+  private readonly authService = inject(AuthService);
 
-  readonly tasks = signal<TaskRecommendation[]>([]);
-  readonly sourceTasks = signal<TaskRecommendation[]>([]);
   readonly loading = signal(true);
   readonly error = signal('');
-  readonly notice = signal('');
-  readonly activeTab = signal<'active' | 'backlog' | 'completed'>(this.router.url.includes('/backlog') ? 'backlog' : 'active');
+  readonly tasks = signal<TaskRecommendation[]>([]);
+  readonly activeTab = signal<'current-sprint' | 'upcoming' | 'completed'>('current-sprint');
 
-  readonly filters = this.fb.group({
-    search: [''],
-    priority: ['']
+  readonly currentSprintTasks = computed(() => this.tasks().filter((task) => this.isCurrentSprint(task) && task.status !== 'Completed'));
+  readonly upcomingTasks = computed(() => this.tasks().filter((task) => this.isUpcoming(task)));
+  readonly completedTasks = computed(() => this.tasks().filter((task) => task.status === 'Completed'));
+
+  readonly summary = computed(() => {
+    const tasks = this.currentSprintTasks();
+    return {
+      currentSprintCount: tasks.length,
+      storyPoints: tasks.reduce((sum, task) => sum + (task.storyPoints ?? 0), 0),
+      inProgress: tasks.filter((task) => task.status === 'InProgress').length,
+      blocked: tasks.filter((task) => this.isBlocked(task)).length
+    };
   });
 
-  pageTitle(): string {
-    return this.router.url.includes('/backlog') ? 'Backlog' : 'My Tasks';
+  readonly currentUserName = computed(() => this.authService.getFullName(this.authService.getCurrentUserSnapshot()) || 'Admin User');
+
+  tabLabel(tab: 'current-sprint' | 'upcoming' | 'completed'): string {
+    switch (tab) {
+      case 'current-sprint':
+        return 'Current Sprint';
+      case 'upcoming':
+        return 'Upcoming';
+      case 'completed':
+        return 'Completed';
+    }
   }
 
-  pageSubtitle(): string {
-    return this.router.url.includes('/backlog')
-      ? 'Work that is still in backlog and not assigned to a sprint yet.'
-      : 'View and progress the work assigned to you.';
+  setActiveTab(tab: 'current-sprint' | 'upcoming' | 'completed'): void {
+    this.activeTab.set(tab);
+    const element = document.getElementById(tab);
+    element?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  activeTabTitle(): string {
+    return this.tabLabel(this.activeTab());
   }
 
   ngOnInit(): void {
@@ -53,7 +70,7 @@ export class MyTasksComponent implements OnInit {
   loadTasks(): void {
     this.loading.set(true);
     this.error.set('');
-    this.notice.set('');
+
     this.taskService
       .getMyTasks()
       .pipe(
@@ -63,95 +80,51 @@ export class MyTasksComponent implements OnInit {
         }),
         finalize(() => this.loading.set(false))
       )
-      .subscribe((tasks) => {
-        this.sourceTasks.set(tasks);
-        this.tasks.set(tasks);
-        this.applyFilters();
-      });
+      .subscribe((tasks) => this.tasks.set(tasks));
   }
 
-  setTab(tab: 'active' | 'backlog' | 'completed'): void {
-    this.activeTab.set(tab);
-    this.applyFilters();
+  sprintLabel(task: TaskRecommendation): string {
+    return task.sprintName?.trim() ? task.sprintName : 'Unplanned';
   }
 
-  applyFilters(): void {
-    const { search, priority } = this.filters.getRawValue();
-    const filtered = this.sourceTasks().filter((task) => {
-      const matchesTab = this.matchesTab(task);
-      const matchesSearch = !search || `${task.title} ${task.clientName} ${task.projectName}`.toLowerCase().includes(search.toLowerCase());
-      const matchesPriority = !priority || task.priority === priority;
-      return matchesTab && matchesSearch && matchesPriority;
-    });
-    this.tasks.set(filtered);
-  }
-
-  resetFilters(): void {
-    this.filters.reset();
-    this.activeTab.set(this.router.url.includes('/backlog') ? 'backlog' : 'active');
-    this.applyFilters();
-  }
-
-  performTaskAction(task: TaskRecommendation): void {
-    if (task.status === 'Todo') {
-      this.startTask(task.taskId);
-      return;
+  taskDueLabel(task: TaskRecommendation): string {
+    if (!task.deadline) {
+      return 'No due date';
     }
 
-    if (task.status === 'InProgress') {
-      this.completeTask(task.taskId);
-      return;
-    }
-
-    this.viewTask(task);
+    return new Date(task.deadline).toLocaleDateString(undefined, { day: 'numeric', month: 'short' });
   }
 
-  startTask(taskId: string): void {
-    this.notice.set('');
-    this.taskService
-      .startTask(taskId)
-      .pipe(
-        catchError(() => {
-          this.notice.set('We could not start that task just now. Please try again.');
-          return of(null);
-        })
-      )
-      .subscribe(() => this.loadTasks());
+  taskSummary(task: TaskRecommendation): string {
+    const segments = [task.status, `${task.storyPoints ?? 0} SP`, task.priority];
+    return segments.filter(Boolean).join(' · ');
   }
 
-  completeTask(taskId: string): void {
-    this.notice.set('');
-    this.taskService
-      .completeTask(taskId)
-      .pipe(
-        catchError(() => {
-          this.notice.set('We could not complete that task just now. Please try again.');
-          return of(null);
-        })
-      )
-      .subscribe(() => this.loadTasks());
+  taskMeta(task: TaskRecommendation): string {
+    return `${this.sprintLabel(task)}${task.deadline ? ` · Due ${this.taskDueLabel(task)}` : ''}`;
   }
 
-  viewTask(task: TaskRecommendation): void {
-    void task;
+  blockedTasks(): TaskRecommendation[] {
+    return this.currentSprintTasks().filter((task) => this.isBlocked(task));
   }
 
-  visibleTasks(): TaskRecommendation[] {
-    return this.tasks();
+  hasBlockedTasks(): boolean {
+    return this.blockedTasks().length > 0;
   }
 
-  taskReason(task: TaskRecommendation): string {
-    return task.reason?.trim() || 'No delivery note provided.';
+  visibleSection(): 'current-sprint' | 'upcoming' | 'completed' {
+    return this.activeTab();
   }
 
-  private matchesTab(task: TaskRecommendation): boolean {
-    switch (this.activeTab()) {
-      case 'completed':
-        return task.status === 'Completed';
-      case 'backlog':
-        return task.status === 'Todo' && (task.sprintId == null || task.sprintName === 'Backlog');
-      default:
-        return task.status !== 'Completed';
-    }
+  private isCurrentSprint(task: TaskRecommendation): boolean {
+    return !!task.sprintId && task.sprintName?.trim() !== 'Backlog';
+  }
+
+  private isUpcoming(task: TaskRecommendation): boolean {
+    return task.status === 'Todo' && (!task.sprintId || task.sprintName?.trim() === 'Backlog');
+  }
+
+  private isBlocked(task: TaskRecommendation): boolean {
+    return task.reason?.toLowerCase().includes('blocked');
   }
 }

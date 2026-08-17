@@ -6,14 +6,13 @@ import { DashboardService, AdminDashboardResponse } from '../../core/services/da
 import { TaskService } from '../../core/services/task.service';
 import { EmptyStateComponent } from '../../shared/components/empty-state/empty-state.component';
 import { LoadingStateComponent } from '../../shared/components/loading-state/loading-state.component';
-import { PageHeaderComponent } from '../../shared/components/page-header/page-header.component';
 import { TaskPriority } from '../../shared/models/task.models';
 import { TaskAssigneeOption } from '../../core/models/task-admin.models';
 
 @Component({
   selector: 'app-admin-dashboard',
   standalone: true,
-  imports: [CommonModule, PageHeaderComponent, LoadingStateComponent, EmptyStateComponent],
+  imports: [CommonModule, LoadingStateComponent, EmptyStateComponent],
   styleUrl: './admin-dashboard.component.scss',
   templateUrl: './admin-dashboard.component.html'
 })

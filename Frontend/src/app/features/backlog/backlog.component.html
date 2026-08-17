@@ -1,0 +1,126 @@
+<section class="screen backlog-screen">
+  <div class="screen-header">
+    <div>
+      <p class="eyebrow">Backlog</p>
+      <h1>Product Backlog</h1>
+      <p class="subheading">Work waiting to be planned and committed to a sprint.</p>
+    </div>
+  </div>
+
+  @if (loading()) {
+    <app-loading-state message="Loading backlog..." />
+  } @else if (error()) {
+    <app-error-state title="Backlog unavailable" [message]="error()" actionLabel="Try Again" [retry]="loadItems.bind(this)" />
+  } @else {
+    <section class="backlog-health">
+      <div>
+        <strong>{{ health().items }}</strong>
+        <span>Backlog Items</span>
+      </div>
+      <div>
+        <strong>{{ health().storyPoints }}</strong>
+        <span>Estimated Work</span>
+      </div>
+      <div>
+        <strong>{{ health().readyToPlan }}</strong>
+        <span>Ready to Plan</span>
+      </div>
+    </section>
+
+    <section class="backlog-filters" [formGroup]="filters">
+      <input placeholder="Search backlog..." formControlName="search" />
+      <input placeholder="Project ▼" formControlName="projectId" />
+      <input placeholder="Priority ▼" formControlName="priority" />
+      <div class="actions">
+        <button type="button" class="secondary" (click)="resetFilters()">Reset</button>
+      </div>
+    </section>
+
+    <section class="backlog-group">
+      <div class="backlog-group__heading">
+        <h2>Next Sprint Candidates</h2>
+        <p>Backlog work currently prepared for sprint planning.</p>
+      </div>
+
+      @if (planningReadyItems().length) {
+        <div class="backlog-rows">
+          @for (item of planningReadyItems(); track item.id) {
+            <article class="backlog-row panel">
+              <div class="backlog-row__priority"><app-priority-badge [priority]="item.priority" /></div>
+              <div class="backlog-row__body">
+                <h3>{{ item.title }}</h3>
+                <p>{{ item.clientName }} · {{ item.projectName }}</p>
+                <span class="backlog-type">{{ itemType(item) }}</span>
+              </div>
+              <div class="backlog-row__meta">
+                <strong>{{ storyPointsLabel(item) }}</strong>
+                <span>{{ assigneeLabel(item) }}</span>
+                <span [class]="readinessClass(item)">{{ readinessLabel(item) }}</span>
+              </div>
+            </article>
+          }
+        </div>
+      } @else {
+        <app-empty-state title="No ready candidates yet." message="Items here will appear once they have an estimate and an assignee." />
+      }
+    </section>
+
+    <section class="backlog-group">
+      <div class="backlog-group__heading">
+        <h2>Needs Attention Before Planning</h2>
+        <p>Backlog work that needs refinement before sprint planning.</p>
+      </div>
+
+      @if (needsAttentionItems().length) {
+        <div class="backlog-rows backlog-rows--attention">
+          @for (item of needsAttentionItems(); track item.id) {
+            <article class="backlog-row panel">
+              <div class="backlog-row__priority"><app-priority-badge [priority]="item.priority" /></div>
+              <div class="backlog-row__body">
+                <h3>{{ item.title }}</h3>
+                <p>{{ item.clientName }} · {{ item.projectName }}</p>
+                <span class="backlog-type">{{ itemType(item) }}</span>
+              </div>
+              <div class="backlog-row__meta backlog-row__meta--stacked">
+                <strong>{{ storyPointsLabel(item) }}</strong>
+                <span>{{ assigneeLabel(item) }}</span>
+                <span [class]="readinessClass(item)">{{ readinessLabel(item) }}</span>
+              </div>
+            </article>
+          }
+        </div>
+      } @else {
+        <app-empty-state title="Nothing needs attention right now." message="All visible backlog items have enough information for planning." />
+      }
+    </section>
+
+    <section class="backlog-group">
+      <div class="backlog-group__heading">
+        <h2>Other Backlog Work</h2>
+        <p>Remaining backlog work.</p>
+      </div>
+
+      @if (otherBacklogItems().length) {
+        <div class="backlog-rows backlog-rows--other">
+          @for (item of otherBacklogItems(); track item.id) {
+            <article class="backlog-row panel">
+              <div class="backlog-row__priority"><app-priority-badge [priority]="item.priority" /></div>
+              <div class="backlog-row__body">
+                <h3>{{ item.title }}</h3>
+                <p>{{ item.clientName }} · {{ item.projectName }}</p>
+                <span class="backlog-type">{{ itemType(item) }}</span>
+              </div>
+              <div class="backlog-row__meta">
+                <strong>{{ storyPointsLabel(item) }}</strong>
+                <span>{{ assigneeLabel(item) }}</span>
+                <span [class]="readinessClass(item)">{{ readinessLabel(item) }}</span>
+              </div>
+            </article>
+          }
+        </div>
+      } @else {
+        <app-empty-state title="No additional backlog work." message="Everything currently visible is either planning-ready or needs attention." />
+      }
+    </section>
+  }
+</section>

@@ -25,9 +25,6 @@ export class NavbarComponent {
 
   pageTitle(): string {
     const url = this.router.url;
-    if (url.startsWith('/dashboard')) {
-      return 'Admin Dashboard';
-    }
     if (url.startsWith('/today')) {
       return 'Today';
     }
@@ -45,6 +42,9 @@ export class NavbarComponent {
     }
     if (url.startsWith('/tasks')) {
       return 'Tasks';
+    }
+    if (url.startsWith('/task-details')) {
+      return 'Task Details';
     }
     if (url.startsWith('/my-tasks')) {
       return 'My Tasks';

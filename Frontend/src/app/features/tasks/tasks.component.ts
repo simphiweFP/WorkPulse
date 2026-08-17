@@ -11,13 +11,10 @@ import { TaskFilter, TaskService } from '../../core/services/task.service';
 import { EmptyStateComponent } from '../../shared/components/empty-state/empty-state.component';
 import { ErrorStateComponent } from '../../shared/components/error-state/error-state.component';
 import { LoadingStateComponent } from '../../shared/components/loading-state/loading-state.component';
-import { PageHeaderComponent } from '../../shared/components/page-header/page-header.component';
 import { PriorityBadgeComponent } from '../../shared/components/priority-badge/priority-badge.component';
 import { StatusBadgeComponent } from '../../shared/components/status-badge/status-badge.component';
+import { FeedbackAlertService } from '../../shared/services/feedback-alert.service';
 import { lockBodyScroll, unlockBodyScroll } from '../../shared/utilities/modal-state';
-import { SprintService } from '../../core/services/sprint.service';
-import { SprintSummary } from '../../core/models/sprint.models';
-import Swal from 'sweetalert2';
 
 @Component({
   selector: 'app-tasks',
@@ -26,7 +23,6 @@ import Swal from 'sweetalert2';
     CommonModule,
     DatePipe,
     ReactiveFormsModule,
-    PageHeaderComponent,
     LoadingStateComponent,
     EmptyStateComponent,
     ErrorStateComponent,
@@ -40,14 +36,13 @@ export class TasksComponent implements OnInit {
   private readonly taskService = inject(TaskService);
   private readonly clientService = inject(ClientService);
   private readonly projectService = inject(ProjectService);
-  private readonly sprintService = inject(SprintService);
   private readonly fb = inject(FormBuilder);
+  private readonly alerts = inject(FeedbackAlertService);
 
   readonly tasks = signal<TaskAdminSummary[]>([]);
   readonly clients = signal<ClientSummary[]>([]);
   readonly projects = signal<ProjectSummary[]>([]);
   readonly availableProjects = signal<ProjectSummary[]>([]);
-  readonly sprints = signal<SprintSummary[]>([]);
   readonly assignees = signal<TaskAssigneeOption[]>([]);
   readonly loading = signal(true);
   readonly submitting = signal(false);
@@ -83,8 +78,11 @@ export class TasksComponent implements OnInit {
     description: ['', Validators.required],
     clientId: ['', Validators.required],
     projectId: ['', Validators.required],
+    type: ['Story', Validators.required],
+    storyPoints: [1, [Validators.required, Validators.min(1)]],
     sprintId: [''],
     priority: ['Medium', Validators.required],
+    status: ['Todo', Validators.required],
     deadline: ['', Validators.required],
     assigneeId: ['', Validators.required]
   });
@@ -120,6 +118,16 @@ export class TasksComponent implements OnInit {
     ).subscribe((projects) => this.availableProjects.set(projects));
   }
 
+  private syncAvailableProjectsForForm(): void {
+    const clientId = this.form.controls.clientId.value;
+    if (!clientId) {
+      this.availableProjects.set(this.projects());
+      return;
+    }
+
+    this.loadProjectsForClient(clientId);
+  }
+
   loadData(): void {
     this.loading.set(true);
     this.error.set('');
@@ -143,12 +151,6 @@ export class TasksComponent implements OnInit {
           return of([] as ProjectSummary[]);
         })
       ),
-      sprints: this.sprintService.getSprints().pipe(
-        catchError(() => {
-          loadFailed = true;
-          return of([] as SprintSummary[]);
-        })
-      ),
       assignees: this.taskService.getDevelopers().pipe(
         catchError(() => {
           loadFailed = true;
@@ -157,12 +159,11 @@ export class TasksComponent implements OnInit {
       )
     })
       .pipe(finalize(() => this.loading.set(false)))
-      .subscribe(({ tasks, clients, projects, sprints, assignees }) => {
+      .subscribe(({ tasks, clients, projects, assignees }) => {
         this.tasks.set(tasks.map((task) => this.mapTaskDeadline(task)));
         this.clients.set(clients);
         this.projects.set(projects);
-        this.availableProjects.set(projects);
-        this.sprints.set(sprints);
+        this.syncAvailableProjectsForForm();
         this.assignees.set(assignees);
         if (loadFailed) {
           this.error.set('Some task information could not be loaded. Showing what is available.');
@@ -194,10 +195,13 @@ export class TasksComponent implements OnInit {
     this.loadProjectsForClient(clientId ?? '');
   }
 
+  onProjectChange(): void {
+  }
+
   openCreateTask(): void {
     this.closeTaskModal();
     this.selectedTaskId.set('');
-    this.form.reset({ priority: 'Medium' });
+    this.form.reset({ priority: 'Medium', sprintId: null, storyPoints: 1, status: 'Todo', type: 'Story' });
     this.formError.set('');
     this.taskFormOpen.set(true);
     lockBodyScroll();
@@ -211,12 +215,15 @@ export class TasksComponent implements OnInit {
       description: '',
       clientId: task.clientId,
       projectId: task.projectId,
-      sprintId: (task.sprintId ?? ''),
+      storyPoints: task.storyPoints,
+      type: task.type,
+      sprintId: task.sprintId ?? null,
       priority: task.priority,
+      status: task.status,
       deadline: task.deadline,
       assigneeId: this.assignees().find((assignee) => `${assignee.firstName} ${assignee.lastName}` === task.assigneeName)?.id ?? ''
     });
-    this.loadProjectsForClient(task.clientId);
+    this.syncAvailableProjectsForForm();
     this.formError.set('');
     this.taskFormOpen.set(true);
     lockBodyScroll();
@@ -229,7 +236,7 @@ export class TasksComponent implements OnInit {
   closeTaskForm(): void {
     this.taskFormOpen.set(false);
     this.selectedTaskId.set('');
-    this.form.reset({ priority: 'Medium' });
+    this.form.reset({ priority: 'Medium', sprintId: null, storyPoints: 1, status: 'Todo', type: 'Story' });
     this.formError.set('');
     unlockBodyScroll();
   }
@@ -256,7 +263,11 @@ export class TasksComponent implements OnInit {
     this.submitting.set(true);
     this.error.set('');
     this.formError.set('');
-    const request = this.form.getRawValue() as TaskUpsertRequest;
+    const currentStatus = this.tasks().find((task) => task.id === this.selectedTaskId())?.status ?? 'Todo';
+    const request = {
+      ...this.form.getRawValue(),
+      status: currentStatus
+    } as TaskUpsertRequest;
     const action$ = this.selectedTaskId()
       ? this.taskService.updateTask(this.selectedTaskId(), request).pipe(map(() => void 0))
       : this.taskService.createTask(request).pipe(map(() => void 0));
@@ -265,26 +276,41 @@ export class TasksComponent implements OnInit {
       .pipe(finalize(() => this.submitting.set(false)))
       .subscribe({
         next: () => {
-          void Swal.fire(this.getTaskActionAlertConfig(this.selectedTaskId() ? 'update' : 'create', true));
+          void this.alerts.success(
+            this.selectedTaskId() ? 'Task updated' : 'Task created',
+            this.selectedTaskId() ? 'The task was updated successfully.' : 'The task was created successfully.'
+          );
           this.closeTaskForm();
           this.loadData();
         },
         error: () => {
           this.formError.set('We could not save that task right now. Please try again.');
-          void Swal.fire(this.getTaskActionAlertConfig(this.selectedTaskId() ? 'update' : 'create', false));
+          void this.alerts.error('Save failed', 'We could not save that task right now. Please try again.');
         }
       });
   }
 
-  startTask(id: string): void {
+  async startTask(id: string): Promise<void> {
+    if (!(await this.alerts.confirmAction('Start task?', 'This will move the task into progress.', 'Start'))) {
+      return;
+    }
+
     this.runModalAction('start', 'We could not start that task right now. Please try again.', this.taskService.startTask(id));
   }
 
-  completeTask(id: string): void {
+  async completeTask(id: string): Promise<void> {
+    if (!(await this.alerts.confirmAction('Complete task?', 'This will mark the task as completed.', 'Complete'))) {
+      return;
+    }
+
     this.runModalAction('complete', 'We could not complete that task right now. Please try again.', this.taskService.completeTask(id));
   }
 
-  deleteTask(id: string): void {
+  async deleteTask(id: string): Promise<void> {
+    if (!(await this.alerts.confirmDestructive('Delete task?', 'This task will be permanently removed.', 'Delete'))) {
+      return;
+    }
+
     this.runModalAction('delete', 'We could not delete that task right now. Please try again.', this.taskService.deleteTask(id));
   }
 
@@ -294,48 +320,28 @@ export class TasksComponent implements OnInit {
 
     request$.subscribe({
       next: () => {
-        void Swal.fire(this.getTaskActionAlertConfig(action, true));
+        const messages = {
+          start: ['Task started', 'The task was started successfully.'],
+          complete: ['Task completed', 'The task was completed successfully.'],
+          delete: ['Task deleted', 'The task was deleted successfully.']
+        } as const;
+        const [title, text] = messages[action];
+        void this.alerts.success(title, text);
         this.closeTaskModal();
         this.loadData();
       },
       error: () => {
         this.error.set(failureMessage);
-        void Swal.fire(this.getTaskActionAlertConfig(action, false));
+        const messages = {
+          start: ['Start failed', 'We could not start that task right now. Please try again.'],
+          complete: ['Complete failed', 'We could not complete that task right now. Please try again.'],
+          delete: ['Delete failed', 'We could not delete that task right now. Please try again.']
+        } as const;
+        const [title, text] = messages[action];
+        void this.alerts.error(title, text);
         this.modalActionBusy.set(null);
       }
     });
-  }
-
-  private getTaskActionAlertConfig(action: 'create' | 'update' | 'start' | 'complete' | 'delete', success: boolean): { icon: 'success' | 'error'; title: string; text: string; confirmButtonColor: string } {
-    const labels = {
-      create: 'created',
-      update: 'updated',
-      start: 'started',
-      complete: 'completed',
-      delete: 'deleted'
-    } as const;
-
-    const failures = {
-      create: 'We could not save that task right now. Please try again.',
-      update: 'We could not save that task right now. Please try again.',
-      start: 'We could not start that task right now. Please try again.',
-      complete: 'We could not complete that task right now. Please try again.',
-      delete: 'We could not delete that task right now. Please try again.'
-    } as const;
-
-    return success
-      ? {
-          icon: 'success',
-          title: `Task ${labels[action]}`,
-          text: `The task was ${labels[action]} successfully.`,
-          confirmButtonColor: '#4f46e5'
-        }
-      : {
-          icon: 'error',
-          title: `Task ${action} failed`,
-          text: failures[action],
-          confirmButtonColor: '#4f46e5'
-        };
   }
 
 }

@@ -1,54 +1,101 @@
 <section class="screen task-detail">
   @if (loadError()) {
-    <app-page-header eyebrow="Tasks" title="Task not available" [subtitle]="loadError()" />
+    <div class="screen-header">
+      <div>
+        <p class="eyebrow">Tasks</p>
+        <h1>Task not available</h1>
+        <p class="subheading">{{ loadError() }}</p>
+      </div>
+    </div>
   } @else if (task(); as model) {
-    <app-page-header eyebrow="Tasks" [title]="model.title" [subtitle]="model.clientName + ' · ' + model.projectName" />
+    <div class="screen-header">
+      <div>
+        <p class="eyebrow">Tasks</p>
+        <h1>{{ model.title }}</h1>
+        <p class="subheading">{{ model.clientName + ' · ' + model.projectName }}</p>
+      </div>
+    </div>
 
     <div class="task-detail__layout">
       <article class="panel task-detail__main">
         <div class="task-detail__hero">
           <div>
             <span class="badge badge--danger">{{ model.priority }}</span>
-            <h2>{{ model.title }}</h2>
-            <p>{{ model.clientName }} · {{ model.projectName }}</p>
+            <h2>Read-only task details</h2>
+            <p>{{ model.title }}</p>
           </div>
-          <div class="task-detail__metrics">
-            <div><span>Status</span><strong>{{ model.status }}</strong></div>
-            <div><span>Sprint</span><strong>{{ model.sprintName ?? 'Backlog' }}</strong></div>
-            <div><span>Deadline</span><strong>{{ model.deadline | date:'mediumDate' }}</strong></div>
-            <div><span>Assignee</span><strong>{{ model.assigneeName }}</strong></div>
+          <div class="task-detail__status-note">
+            <span>Viewing</span>
+            <strong>{{ model.status }}</strong>
           </div>
         </div>
 
-        <div class="task-detail__section">
-          <h3>Description</h3>
-          <p>Task details are loaded from the live API. Additional fields like acceptance criteria or subtasks are not currently exposed by the backend.</p>
-        </div>
-
-        <div class="task-detail__section">
-          <h3>Checklist</h3>
-          <ul>
-            <li>Review the current assignment and status.</li>
-            <li>Continue work if the task is in progress.</li>
-            <li>Complete the task when the work is done.</li>
-          </ul>
-        </div>
+        <form class="task-detail__form">
+          <label>
+            <span>Title</span>
+            <input type="text" [value]="model.title" readonly />
+          </label>
+          <label>
+            <span>Client</span>
+            <input type="text" [value]="model.clientName" readonly />
+          </label>
+          <label>
+            <span>Project</span>
+            <input type="text" [value]="model.projectName" readonly />
+          </label>
+          <label>
+            <span>Type</span>
+            <input type="text" [value]="model.type" readonly />
+          </label>
+          <label>
+            <span>Status</span>
+            <input type="text" [value]="model.status" readonly />
+          </label>
+          <label>
+            <span>Priority</span>
+            <input type="text" [value]="model.priority" readonly />
+          </label>
+          <label>
+            <span>Sprint</span>
+            <input type="text" [value]="model.sprintName ?? 'Backlog'" readonly />
+          </label>
+          <label>
+            <span>Deadline</span>
+            <input type="text" [value]="(model.deadline | date:'mediumDate')" readonly />
+          </label>
+          <label>
+            <span>Assignee</span>
+            <input type="text" [value]="model.assigneeName" readonly />
+          </label>
+          <label class="task-detail__full-width">
+            <span>Notes</span>
+            <textarea rows="4" readonly>Task details are loaded from the live API. Additional fields like acceptance criteria or subtasks are not currently exposed by the backend.</textarea>
+          </label>
+        </form>
       </article>
 
       <aside class="panel task-detail__side">
-        <h3>Action Panel</h3>
-        <button type="button">Continue Task</button>
-        <button type="button" class="secondary">Complete Task</button>
-        <button type="button" class="secondary">Add Note</button>
+        <h3>Read-only summary</h3>
+        <div class="task-detail__metrics">
+          <div><span>Status</span><strong>{{ model.status }}</strong></div>
+          <div><span>Sprint</span><strong>{{ model.sprintName ?? 'Backlog' }}</strong></div>
+          <div><span>Deadline</span><strong>{{ model.deadline | date:'mediumDate' }}</strong></div>
+          <div><span>Assignee</span><strong>{{ model.assigneeName }}</strong></div>
+        </div>
         <div class="task-detail__history">
-          <h4>Recent Activity</h4>
-          <p>Assigned to {{ model.assigneeName }}</p>
-          <p>Priority set to {{ model.priority }}</p>
-          <p>Deadline: {{ model.deadline | date:'mediumDate' }}</p>
+          <h4>Context</h4>
+          <p>This page is intentionally read-only.</p>
+          <p>Use the task list to continue work or update status.</p>
         </div>
       </aside>
     </div>
   } @else {
-    <app-page-header eyebrow="Tasks" title="Task not available" subtitle="The requested task could not be loaded." />
+    <div class="screen-header">
+      <div>
+        <p class="eyebrow">Tasks</p>
+        <h1>Task not available</h1>
+        <p class="subheading">The requested task could not be loaded.</p>
+      </div>
+    </div>
   }
 </section>

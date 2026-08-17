@@ -27,7 +27,11 @@ export function mapApiError(error: unknown): AppError {
       case 404:
         return { status: 404, title: 'Not found', message: problem?.detail ?? 'The requested item could not be found.' };
       case 409:
-        return { status: 409, title: problem?.title ?? 'Conflict', message: problem?.detail ?? problem?.message ?? 'A conflict prevented this change.' };
+        return {
+          status: 409,
+          title: problem?.title ?? 'Conflict',
+          message: problem?.detail ?? problem?.message ?? 'A conflict prevented this change.'
+        };
       default:
         return { status: error.status || 500, title: problem?.title ?? 'Something went wrong', message: problem?.detail ?? problem?.message ?? 'Something went wrong. Please try again.' };
     }

@@ -4,11 +4,19 @@
   } @else if (error()) {
     <app-error-state title="Sprints unavailable" [message]="error()" actionLabel="Try Again" [retry]="loadSprints.bind(this)" />
   } @else {
-    <app-page-header eyebrow="Sprints" title="Sprints" subtitle="Create, edit, and review delivery windows for the current work." />
-
-    <div class="toolbar">
-      <button type="button" (click)="openCreateSprint()">+ New Sprint</button>
+    <div class="screen-header">
+      <div>
+        <p class="eyebrow">Sprints</p>
+        <h1>Sprints</h1>
+        <p class="subheading">Create, edit, and review delivery windows for the current work.</p>
+      </div>
     </div>
+
+    @if (canManageSprintsView()) {
+      <div class="toolbar">
+        <button type="button" (click)="openCreateSprint()">+ New Sprint</button>
+      </div>
+    }
 
     @if (sprints().length) {
       <div class="table-card panel">
@@ -16,9 +24,10 @@
           <thead>
             <tr>
               <th>Sprint</th>
+              <th>Project</th>
               <th>Dates</th>
               <th>Status</th>
-              <th>Tasks</th>
+              <th>Progress</th>
               <th>Actions</th>
             </tr>
           </thead>
@@ -26,12 +35,23 @@
             @for (sprint of sprints(); track sprint.id) {
               <tr>
                 <td class="table-title">{{ sprint.name }}</td>
+                <td>{{ projectName(sprint.projectId) }}</td>
                 <td>{{ sprint.startDate | date:'mediumDate' }} - {{ sprint.endDate | date:'mediumDate' }}</td>
                 <td><span class="badge badge--info">{{ sprint.status }}</span></td>
-                <td>{{ sprint.completedTaskCount }} / {{ sprint.taskCount }}</td>
+                <td>
+                  <div class="progress-cell">
+                    <div class="progress-cell__text">{{ sprintProgressLabelView(sprint) }}</div>
+                    <div class="progress-cell__bar">
+                      <div class="progress-cell__fill" [style.width.%]="sprintProgressPercentView(sprint)"></div>
+                    </div>
+                  </div>
+                </td>
                 <td class="row-actions">
-                  <button type="button" class="secondary" (click)="selectSprint(sprint)">Edit</button>
-                  <button type="button" class="danger" (click)="removeSprint(sprint.id)">Delete</button>
+                  <button type="button" class="secondary" (click)="openSprintTaskDrawer(sprint)">{{ canManageSprintsView() ? 'Tasks' : 'View details' }}</button>
+                  @if (canManageSprintsView()) {
+                    <button type="button" class="secondary" (click)="selectSprint(sprint)">Edit</button>
+                    <button type="button" class="danger" (click)="removeSprint(sprint.id)">Delete</button>
+                  }
                 </td>
               </tr>
             }
@@ -42,7 +62,7 @@
       <app-empty-state title="No sprints yet." message="Create the first sprint so demo data has a clear delivery window." />
     }
 
-    @if (modalOpen()) {
+    @if (modalOpen() && canManageSprintsView()) {
       <div class="modal-backdrop" (click)="closeModal()"></div>
       <section class="modal panel" role="dialog" aria-modal="true" aria-label="Create or edit sprint">
         <div class="modal__header">
@@ -58,10 +78,32 @@
             <div class="field-error full-width">{{ formError() }}</div>
           }
           <label class="full-width">
+            <span>Project *</span>
+            <select formControlName="projectId">
+              <option value="">Select...</option>
+              @for (project of availableProjects(); track project.id) {
+                <option [value]="project.id">{{ project.name }}</option>
+              }
+            </select>
+            @if (form.controls.projectId.touched && form.controls.projectId.invalid) {
+              <small class="field-error">Project is required.</small>
+            }
+          </label>
+          <div class="full-width field-note">
+            Choose the project first so this sprint stays under the correct client and project path.
+          </div>
+          <label class="full-width">
             <span>Sprint Name *</span>
             <input formControlName="name" />
             @if (form.controls.name.touched && form.controls.name.invalid) {
               <small class="field-error">Sprint name is required.</small>
+            }
+          </label>
+          <label>
+            <span>Sprint Point *</span>
+            <input type="number" min="0" formControlName="totalTasks" />
+            @if (form.controls.totalTasks.touched && form.controls.totalTasks.invalid) {
+              <small class="field-error">Sprint point must be zero or more.</small>
             }
           </label>
           <label>
@@ -95,6 +137,109 @@
           </div>
         </form>
       </section>
+    }
+
+    @if (sprintTaskDrawerOpen()) {
+      <div class="drawer-backdrop" (click)="closeSprintTaskDrawer()"></div>
+      <aside class="drawer panel" role="dialog" aria-modal="true" aria-label="Sprint tasks">
+        <div class="drawer__header">
+          <div>
+            <p class="eyebrow">Sprint Tasks</p>
+            <h2>{{ taskSprint()?.name }}</h2>
+            <p>{{ projectName(taskSprint()?.projectId ?? '') }}</p>
+            <p>Story points: {{ taskSprint()?.completedTaskCount ?? 0 }} / {{ taskSprint()?.taskCount ?? 0 }} completed</p>
+          </div>
+          <button type="button" class="secondary" (click)="closeSprintTaskDrawer()">Close</button>
+        </div>
+
+        @if (sprintTaskError()) {
+          <div class="field-error full-width">{{ sprintTaskError() }}</div>
+        }
+
+        @if (sprintTaskWarning()) {
+          <div class="field-warning full-width">{{ sprintTaskWarning() }}</div>
+        }
+
+        @if (!sprintTaskDrawerReadOnlyView()) {
+          <section class="drawer__section">
+            <h3>Assign existing task to sprint</h3>
+            @let disableReason = sprintTaskDisableReason();
+            <form class="form-grid drawer__form" [formGroup]="taskSelectionFormView" (ngSubmit)="saveSprintTask()">
+              <div class="field-note full-width">Choose an existing task to assign it to this sprint.</div>
+
+              <label class="full-width">
+                <span>Existing Task *</span>
+                <select formControlName="taskId">
+                  <option value="">Select...</option>
+                  @for (task of availableSprintTasksView(); track task.id) {
+                    <option [value]="task.id">{{ task.title }} · {{ task.status }} · {{ task.projectName }} · {{ task.assigneeName }}</option>
+                  }
+                </select>
+                @if (taskSelectionFormView.controls.taskId.touched && taskSelectionFormView.controls.taskId.invalid) {
+                  <small class="field-error">Select a task to assign to this sprint.</small>
+                }
+              </label>
+
+              @if (taskSelectionFormView.controls.taskId.value) {
+                @let chosenTask = availableSprintTasksView().find((task) => task.id === taskSelectionFormView.controls.taskId.value);
+                @if (chosenTask) {
+                  <div class="field-note full-width">{{ chosenTask.title }} will be assigned to this sprint and keep its current details.</div>
+                }
+              }
+
+              <div class="actions full-width">
+                <button type="button" class="secondary" (click)="closeSprintTaskDrawer()">Cancel</button>
+                <button type="submit" [disabled]="sprintTaskSubmitting() || !!disableReason">{{ sprintTaskSubmitting() ? 'Saving...' : 'Assign Task' }}</button>
+              </div>
+            </form>
+          </section>
+        } @else {
+          <section class="drawer__section">
+            <h3>Read-only sprint details</h3>
+            <p class="field-note">This sprint is visible because you have tasks assigned to it. Editing is available to admins only.</p>
+          </section>
+        }
+
+        <section class="drawer__section">
+          <h3>Tasks in this sprint</h3>
+          @if (sprintTaskLoading()) {
+            <p class="field-note">Loading sprint tasks...</p>
+          } @else if (sprintTasks().length) {
+            <div class="drawer-task-list">
+              @for (task of sprintTasks(); track task.id) {
+                <article class="drawer-task-card panel">
+                  <div class="drawer-task-card__header">
+                    <div>
+                      <h4>{{ task.title }}</h4>
+                      <p>{{ task.assigneeName }}</p>
+                    </div>
+                    <span class="badge badge--info">{{ task.status }}</span>
+                  </div>
+                  <p class="drawer-task-card__meta">Type: {{ task.status }}</p>
+                  <p class="drawer-task-card__meta">Expected work day: {{ task.deadline | date:'mediumDate' }}</p>
+                  <p class="drawer-task-card__meta">Priority: {{ task.priority }}</p>
+                  <p class="drawer-task-card__meta">Story points: {{ task.storyPoints }}</p>
+                  @if (!sprintTaskDrawerReadOnlyView()) {
+                    <div class="drawer-task-card__actions">
+                      @if (task.status === 'Todo') {
+                      <button type="button" class="secondary" (click)="startSprintTask(task)">Start</button>
+                      }
+                      @if (task.status === 'InProgress') {
+                        <button type="button" class="secondary" (click)="completeSprintTask(task)">Complete</button>
+                      }
+                      @if (canManageSprintTasksView()) {
+                        <button type="button" class="danger" (click)="removeSprintTask(task)">Remove from Sprint</button>
+                      }
+                    </div>
+                  }
+                </article>
+              }
+            </div>
+          } @else {
+            <p class="field-note">No tasks are attached to this sprint yet.</p>
+          }
+        </section>
+      </aside>
     }
   }
 </section>

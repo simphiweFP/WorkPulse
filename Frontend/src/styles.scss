@@ -98,38 +98,55 @@ textarea { padding: 12px; min-height: 96px; }
 	margin: 0 auto;
 }
 
-.page-header {
+.screen-header {
 	display: flex;
 	justify-content: space-between;
 	align-items: flex-start;
 	gap: 16px;
-	margin-bottom: 14px;
+	margin-bottom: 18px;
+	padding: 4px 0 2px;
 }
 
-.page-header .eyebrow,
-.page-header .meta,
-.page-header .subheading {
+.screen-header .eyebrow,
+.screen-header .meta,
+.screen-header .subheading {
 	margin: 0;
 	color: var(--wp-text-muted);
 	font-size: 12px;
 }
 
-.page-header h1 {
+.screen-header h1 {
 	margin: 4px 0;
 	font-size: 28px;
 	line-height: 1.08;
 	letter-spacing: -0.03em;
 }
 
-.page-header .subheading {
+.screen-header .subheading {
 	margin-top: 2px;
 	font-size: 14px;
 }
 
-.page-header .meta {
+.screen-header .meta {
 	font-size: 11px;
 	text-transform: uppercase;
 	letter-spacing: 0.08em;
+}
+
+@media (max-width: 720px) {
+	.screen-header {
+		flex-direction: column;
+		gap: 10px;
+		margin-bottom: 16px;
+	}
+
+	.screen-header h1 {
+		font-size: 24px;
+	}
+
+	.screen-header .subheading {
+		font-size: 13px;
+	}
 }
 
 .table-card {
@@ -395,7 +412,78 @@ th {
 }
 
 .error-state, .empty-state {
-	padding: 24px;
+	padding: 28px;
+	border-radius: var(--wp-radius-md);
+	border: 1px solid rgba(79, 70, 229, 0.12);
+	background:
+		linear-gradient(180deg, rgba(255, 255, 255, 0.94) 0%, rgba(248, 250, 252, 0.98) 100%),
+		radial-gradient(circle at top left, rgba(79, 70, 229, 0.08), transparent 42%),
+		radial-gradient(circle at bottom right, rgba(14, 165, 233, 0.08), transparent 38%);
+	box-shadow: var(--wp-shadow-sm);
+}
+
+.empty-state {
+	display: grid;
+	place-items: center;
+	gap: 8px;
+	text-align: center;
+	min-height: 220px;
+	position: relative;
+	overflow: hidden;
+}
+
+.empty-state::before {
+	content: '';
+	position: absolute;
+	width: 220px;
+	height: 220px;
+	border-radius: 999px;
+	background: radial-gradient(circle, rgba(79, 70, 229, 0.14) 0%, rgba(79, 70, 229, 0.04) 38%, transparent 70%);
+	top: -120px;
+	right: -90px;
+	pointer-events: none;
+}
+
+.empty-state::after {
+	content: '';
+	position: absolute;
+	inset: auto -30px -60px auto;
+	width: 160px;
+	height: 160px;
+	border-radius: 999px;
+	background: radial-gradient(circle, rgba(14, 165, 233, 0.16) 0%, rgba(14, 165, 233, 0.05) 42%, transparent 72%);
+	pointer-events: none;
+}
+
+.empty-state h2 {
+	margin: 0;
+	font-size: 20px;
+	letter-spacing: -0.02em;
+	color: var(--wp-text);
+	position: relative;
+	z-index: 1;
+}
+
+.empty-state p {
+	margin: 0;
+	max-width: 42ch;
+	color: var(--wp-text-muted);
+	line-height: 1.6;
+	position: relative;
+	z-index: 1;
+}
+
+.empty-state:has(h2 + p)::after {
+	opacity: 0.9;
+}
+
+.panel .empty-state {
+	min-height: 180px;
+}
+
+.table-card .empty-state,
+.summary-card .empty-state {
+	min-height: 140px;
 }
 
 @media (max-width: 1200px) {

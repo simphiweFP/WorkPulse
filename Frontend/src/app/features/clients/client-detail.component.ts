@@ -7,12 +7,11 @@ import { ClientService } from '../../core/services/client.service';
 import { EmptyStateComponent } from '../../shared/components/empty-state/empty-state.component';
 import { ErrorStateComponent } from '../../shared/components/error-state/error-state.component';
 import { LoadingStateComponent } from '../../shared/components/loading-state/loading-state.component';
-import { PageHeaderComponent } from '../../shared/components/page-header/page-header.component';
 
 @Component({
   selector: 'app-client-detail',
   standalone: true,
-  imports: [CommonModule, PageHeaderComponent, LoadingStateComponent, EmptyStateComponent, ErrorStateComponent],
+  imports: [CommonModule, LoadingStateComponent, EmptyStateComponent, ErrorStateComponent],
   templateUrl: './client-detail.component.html'
 })
 export class ClientDetailComponent implements OnInit {

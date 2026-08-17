@@ -6,6 +6,7 @@ import { finalize, timeout } from 'rxjs';
 import { AuthService } from '../../../core/auth/auth.service';
 import { RegisterRequest } from '../../../core/models/auth.models';
 import { getAuthErrorMessage } from '../auth-error.util';
+import { FeedbackAlertService } from '../../../shared/services/feedback-alert.service';
 
 function passwordsMatchValidator(group: AbstractControl): ValidationErrors | null {
   const password = group.get('password')?.value;
@@ -30,7 +31,8 @@ export class RegisterComponent {
   constructor(
     private readonly fb: FormBuilder,
     private readonly authService: AuthService,
-    private readonly router: Router
+    private readonly router: Router,
+    private readonly alerts: FeedbackAlertService
   ) {
     this.form = this.fb.group(
       {
@@ -70,11 +72,12 @@ export class RegisterComponent {
       )
       .subscribe({
         next: () => {
-          this.router.navigate(['/dashboard']);
+          void this.alerts.success('Account created', 'Your account has been created successfully.').then(() => this.router.navigate(['/dashboard']));
         },
         error: (error) => {
           this.submissionFailed = true;
           this.errorMessage = getAuthErrorMessage(error, 'Registration failed.');
+          void this.alerts.error('Registration failed', this.errorMessage);
         }
       });
   }

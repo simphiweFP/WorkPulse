@@ -7,12 +7,14 @@
       <p>{{ error() }}</p>
     </section>
   } @else if (dashboard(); as model) {
-    <app-page-header
-      eyebrow="Admin Portal · Dashboard"
-      [title]='greeting() + ", " + greetingName() + " — company snapshot"'
-      subtitle="A compact view of delivery health, team load, and current pressure points."
-      meta="Live"
-    />
+    <div class="screen-header">
+      <div>
+        <p class="eyebrow">Admin Portal · Dashboard</p>
+        <h1>{{ greeting() + ', ' + greetingName() + ' — company snapshot' }}</h1>
+        <p class="subheading">A compact view of delivery health, team load, and current pressure points.</p>
+      </div>
+      <p class="meta">Live</p>
+    </div>
 
     <section class="hero-card panel">
       <div class="hero-card__copy">

@@ -4,6 +4,7 @@ export interface User {
   lastName: string;
   email: string;
   role: string;
+  isPending?: boolean;
 }
 
 export interface AuthResponse {

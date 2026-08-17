@@ -1,97 +1,152 @@
-<section class="screen tasks-screen">
-  <app-page-header eyebrow="Work Queue" [title]="pageTitle()" [subtitle]="pageSubtitle()" />
+<section class="screen my-tasks">
+  <div class="screen-header">
+    <div>
+      <p class="eyebrow">Work Queue</p>
+      <h1>My Tasks</h1>
+      <p class="subheading">Your personal workload overview for the current sprint, upcoming work, and completed items.</p>
+    </div>
+    <p class="meta">{{ currentUserName() }}</p>
+  </div>
 
   @if (loading()) {
     <app-loading-state message="Loading your tasks..." />
   } @else if (error()) {
     <app-error-state title="Tasks unavailable" [message]="error()" actionLabel="Try Again" [retry]="loadTasks.bind(this)" />
   } @else {
-    @if (notice()) {
-      <section class="inline-notice">{{ notice() }}</section>
-    }
+    <section class="summary-strip">
+      <article class="summary-chip">
+        <span>Current Sprint</span>
+        <strong>{{ summary().currentSprintCount }} tasks</strong>
+      </article>
+      <article class="summary-chip">
+        <span>Story Points</span>
+        <strong>{{ summary().storyPoints }} SP</strong>
+      </article>
+      <article class="summary-chip">
+        <span>In Progress</span>
+        <strong>{{ summary().inProgress }}</strong>
+      </article>
+      <article class="summary-chip">
+        <span>Blocked</span>
+        <strong>{{ summary().blocked }}</strong>
+      </article>
+    </section>
 
     <section class="tabs tabs--density-ready">
-      <button type="button" [class.is-active]="activeTab() === 'active'" (click)="setTab('active')">Active</button>
-      <button type="button" [class.is-active]="activeTab() === 'backlog'" (click)="setTab('backlog')">Backlog</button>
-      <button type="button" [class.is-active]="activeTab() === 'completed'" (click)="setTab('completed')">Completed</button>
+      <button type="button" [class.is-active]="activeTab() === 'current-sprint'" (click)="setActiveTab('current-sprint')">Current Sprint</button>
+      <button type="button" [class.is-active]="activeTab() === 'upcoming'" (click)="setActiveTab('upcoming')">Upcoming</button>
+      <button type="button" [class.is-active]="activeTab() === 'completed'" (click)="setActiveTab('completed')">Completed</button>
     </section>
 
-    <section class="panel filters form-grid filters--density-ready" [formGroup]="filters">
-      <label><input placeholder="Search" formControlName="search" /></label>
-      <label>
-        <select formControlName="priority">
-          <option value="">Priority</option>
-          <option value="Low">Low</option>
-          <option value="Medium">Medium</option>
-          <option value="High">High</option>
-          <option value="Critical">Critical</option>
-        </select>
-      </label>
-      <div class="actions full-width">
-        <button type="button" class="secondary" (click)="applyFilters()">Apply Filters</button>
-        <button type="button" class="secondary" (click)="resetFilters()">Reset</button>
-      </div>
+    <section class="work-columns">
+      @if (activeTab() === 'current-sprint') {
+        <article id="current-sprint" class="panel work-panel work-panel--full">
+          <header class="work-panel__header">
+            <div>
+              <p class="eyebrow">Current Sprint</p>
+              <h2>Working on, next and blocked</h2>
+            </div>
+            <span class="work-panel__meta">{{ summary().currentSprintCount }} tasks</span>
+          </header>
+
+          @if (currentSprintTasks().length) {
+            <div class="work-stack">
+              @for (task of currentSprintTasks(); track task.taskId) {
+                <article class="work-card">
+                  <div class="work-card__top">
+                    <div>
+                      <div class="work-card__key">{{ task.taskId }}</div>
+                      <h3>{{ task.title }}</h3>
+                      <p>{{ taskSummary(task) }}</p>
+                    </div>
+                    <app-priority-badge [priority]="task.priority" />
+                  </div>
+                  <div class="work-card__meta">
+                    <app-status-badge [status]="task.status" />
+                    <span>{{ task.storyPoints }} SP</span>
+                    <span>{{ sprintLabel(task) }}</span>
+                    <span>{{ task.deadline ? 'Due ' + taskDueLabel(task) : 'No due date' }}</span>
+                  </div>
+                  @if (task.reason) {
+                    <p class="work-card__note">{{ task.reason }}</p>
+                  }
+                </article>
+              }
+            </div>
+          } @else {
+            <app-empty-state title="No work assigned for the current sprint." message="Your current sprint assignment is clear." />
+          }
+        </article>
+      } @else if (activeTab() === 'upcoming') {
+        <article id="upcoming" class="panel work-panel work-panel--full">
+          <header class="work-panel__header">
+            <div>
+              <p class="eyebrow">Upcoming</p>
+              <h2>Work that is assigned to you but not in the current sprint</h2>
+            </div>
+            <span class="work-panel__meta">{{ upcomingTasks().length }} tasks</span>
+          </header>
+
+          @if (upcomingTasks().length) {
+            <div class="work-stack">
+              @for (task of upcomingTasks(); track task.taskId) {
+                <article class="work-card work-card--compact">
+                  <div class="work-card__top">
+                    <div>
+                      <div class="work-card__key">{{ task.taskId }}</div>
+                      <h3>{{ task.title }}</h3>
+                      <p>{{ task.clientName }} · {{ task.projectName }}</p>
+                    </div>
+                    <app-priority-badge [priority]="task.priority" />
+                  </div>
+                  <div class="work-card__meta">
+                    <app-status-badge [status]="task.status" />
+                    <span>{{ task.storyPoints }} SP</span>
+                    <span>{{ sprintLabel(task) }}</span>
+                    <span>{{ task.deadline ? 'Due ' + taskDueLabel(task) : 'No due date' }}</span>
+                  </div>
+                </article>
+              }
+            </div>
+          } @else {
+            <app-empty-state title="No upcoming work assigned to you." message="There is nothing queued for later yet." />
+          }
+        </article>
+      } @else {
+        <article id="completed" class="panel work-panel work-panel--full">
+          <header class="work-panel__header">
+            <div>
+              <p class="eyebrow">Completed</p>
+              <h2>Your completed work</h2>
+            </div>
+            <span class="work-panel__meta">{{ completedTasks().length }} tasks</span>
+          </header>
+
+          @if (completedTasks().length) {
+            <div class="work-grid">
+              @for (task of completedTasks(); track task.taskId) {
+                <article class="work-card work-card--completed">
+                  <div class="work-card__top">
+                    <div>
+                      <div class="work-card__key">{{ task.taskId }}</div>
+                      <h3>{{ task.title }}</h3>
+                      <p>{{ task.clientName }} · {{ task.projectName }}</p>
+                    </div>
+                    <app-status-badge [status]="task.status" />
+                  </div>
+                  <div class="work-card__meta">
+                    <span>{{ task.storyPoints }} SP</span>
+                    <span>{{ sprintLabel(task) }}</span>
+                    <span>{{ task.deadline ? 'Completed around ' + taskDueLabel(task) : 'Completed' }}</span>
+                  </div>
+                </article>
+              }
+            </div>
+          } @else {
+            <app-empty-state title="No completed work yet." message="Finished items will appear here for workload history." />
+          }
+        </article>
+      }
     </section>
-
-    @if (visibleTasks().length) {
-      <div class="table-card">
-        <table>
-          <thead>
-            <tr>
-              <th>Task</th>
-              <th>Project</th>
-              <th>Sprint</th>
-              <th>Priority</th>
-              <th>Due Date</th>
-              <th>Status</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            @for (task of visibleTasks(); track task.taskId) {
-              <tr>
-                <td>
-                  <div class="table-title">{{ task.title }}</div>
-                  <small>{{ taskReason(task) }}</small>
-                </td>
-                <td>{{ task.projectName }}</td>
-                <td>{{ task.sprintName ?? 'Backlog' }}</td>
-                <td><app-priority-badge [priority]="task.priority" /></td>
-                <td>{{ task.deadline | date:'mediumDate' }}</td>
-                <td><app-status-badge [status]="task.status" /></td>
-                <td class="row-actions">
-                  <button type="button" class="secondary" (click)="performTaskAction(task)">{{ task.actionLabel ?? 'View' }}</button>
-                </td>
-              </tr>
-            }
-          </tbody>
-        </table>
-      </div>
-
-      <div class="mobile-record-list">
-        @for (task of visibleTasks(); track task.taskId) {
-          <article class="mobile-record panel">
-            <div class="mobile-record__header">
-              <div>
-                <h3>{{ task.title }}</h3>
-                <p>{{ task.projectName }}</p>
-              </div>
-              <app-priority-badge [priority]="task.priority" />
-            </div>
-            <div class="mobile-record__meta mobile-record__meta--stacked">
-              <div><span>Due Date</span><strong>{{ task.deadline | date:'mediumDate' }}</strong></div>
-              <div><span>Sprint</span><strong>{{ task.sprintName ?? 'Backlog' }}</strong></div>
-              <div><span>Status</span><strong><app-status-badge [status]="task.status" /></strong></div>
-            </div>
-            <p class="task-note">{{ taskReason(task) }}</p>
-            <div class="mobile-record__actions mobile-record__actions--wrap">
-              <button type="button" class="secondary" (click)="performTaskAction(task)">{{ task.actionLabel ?? 'View' }}</button>
-            </div>
-          </article>
-        }
-      </div>
-    } @else {
-      <app-empty-state title="Nothing here yet." [message]="activeTab() === 'completed' ? 'Completed work will appear here.' : 'No assigned tasks match the current filters.'" />
-    }
   }
 </section>

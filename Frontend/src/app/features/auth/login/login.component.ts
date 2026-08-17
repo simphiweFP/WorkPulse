@@ -6,6 +6,7 @@ import { finalize, timeout } from 'rxjs';
 import { AuthService } from '../../../core/auth/auth.service';
 import { LoginRequest } from '../../../core/models/auth.models';
 import { getAuthErrorMessage } from '../auth-error.util';
+import { FeedbackAlertService } from '../../../shared/services/feedback-alert.service';
 
 @Component({
   selector: 'app-login',
@@ -23,7 +24,8 @@ export class LoginComponent {
   constructor(
     private readonly fb: FormBuilder,
     private readonly authService: AuthService,
-    private readonly router: Router
+    private readonly router: Router,
+    private readonly alerts: FeedbackAlertService
   ) {
     this.form = this.fb.group({
       email: ['', [Validators.required, Validators.email]],
@@ -50,11 +52,12 @@ export class LoginComponent {
       )
       .subscribe({
         next: () => {
-          this.router.navigate(['/dashboard']);
+          void this.alerts.success('Signed in', 'You have been signed in successfully.').then(() => this.router.navigate(['/today']));
         },
         error: (error) => {
           this.submissionFailed = true;
           this.errorMessage = getAuthErrorMessage(error, 'Login failed.');
+          void this.alerts.error('Login failed', this.errorMessage);
         }
       });
   }

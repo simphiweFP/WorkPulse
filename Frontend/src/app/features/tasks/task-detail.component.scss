@@ -51,6 +51,63 @@
   color: var(--wp-text-muted);
 }
 
+.task-detail__status-note {
+  padding: 10px 12px;
+  border-radius: 14px;
+  border: 1px solid #e2e8f0;
+  background: #f8fafc;
+}
+
+.task-detail__status-note span,
+.task-detail__form span {
+  display: block;
+  margin: 0 0 4px;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--wp-text-muted);
+}
+
+.task-detail__status-note strong {
+  font-size: 14px;
+}
+
+.task-detail__form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.task-detail__form label {
+  display: grid;
+  gap: 6px;
+}
+
+.task-detail__full-width {
+  grid-column: 1 / -1;
+}
+
+.task-detail__form input,
+.task-detail__form textarea {
+  width: 100%;
+  padding: 11px 12px;
+  border-radius: 12px;
+  border: 1px solid #dbe4f0;
+  background: #f8fafc;
+  color: var(--wp-text-primary);
+  font: inherit;
+}
+
+.task-detail__form textarea {
+  resize: vertical;
+  min-height: 120px;
+}
+
+.task-detail__form input[readonly],
+.task-detail__form textarea[readonly] {
+  cursor: default;
+}
+
 .task-detail__metrics {
   display: grid;
   gap: 10px;
@@ -64,7 +121,6 @@
   background: #f8fafc;
 }
 
-.task-detail__metrics span,
 .task-detail__section h3,
 .task-detail__history h4 {
   display: block;
@@ -108,14 +164,6 @@
   font-size: 18px;
 }
 
-.task-detail__side button {
-  width: 100%;
-}
-
-.task-detail__side button:not(:last-child) {
-  margin-bottom: 2px;
-}
-
 .task-detail__history {
   padding-top: 10px;
   margin-top: 10px;
@@ -142,7 +190,7 @@
     width: 100%;
   }
 
-  .task-detail__side button {
-    min-height: 42px;
+  .task-detail__form {
+    grid-template-columns: 1fr;
   }
 }

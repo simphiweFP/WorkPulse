@@ -5,6 +5,8 @@ export interface ProjectSummary {
   clientId: string;
   name: string;
   clientName: string;
+  totalTasks: number;
+  startDate: string;
   status: ProjectStatus;
   openTasks: number;
   completedTasks: number;
@@ -15,6 +17,8 @@ export interface ProjectResponse {
   clientId: string;
   name: string;
   clientName: string;
+  totalTasks: number;
+  startDate: string;
   status: ProjectStatus;
   openTaskCount: number;
   completedTaskCount: number;
@@ -27,6 +31,8 @@ export interface ProjectDetails extends ProjectSummary {
 export interface ProjectUpsertRequest {
   name: string;
   clientId: string;
+  totalTasks: number;
+  startDate: string;
   status: ProjectStatus;
   description: string;
 }

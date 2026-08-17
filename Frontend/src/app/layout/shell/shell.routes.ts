@@ -8,17 +8,17 @@ export const shellRoutes: Routes = [
     children: [
       {
         path: 'today',
-        loadComponent: () => import('../../features/dashboard/dashboard.component').then((component) => component.DashboardComponent)
+        loadComponent: () => import('../../features/dashboard/dashboard.component').then((c) => c.DashboardComponent)
       },
       {
         path: 'dashboard',
         canActivate: [roleGuard],
         data: { role: 'Admin' },
-        loadComponent: () => import('../../features/dashboard/admin-dashboard.component').then((component) => component.AdminDashboardComponent)
+        loadComponent: () => import('../../features/dashboard/admin-dashboard.component').then((c) => c.AdminDashboardComponent)
       },
       {
         path: 'backlog',
-        loadComponent: () => import('../../features/tasks/my-tasks.component').then((component) => component.MyTasksComponent)
+        loadComponent: () => import('../../features/backlog/backlog.component').then((c) => c.BacklogComponent)
       },
       {
         path: 'sprints',
@@ -62,6 +62,10 @@ export const shellRoutes: Routes = [
         path: 'tasks/:id',
         canActivate: [roleGuard],
         data: { role: 'Admin' },
+        loadComponent: () => import('../../features/tasks/task-detail.component').then((component) => component.TaskDetailComponent)
+      },
+      {
+        path: 'task-details/:id',
         loadComponent: () => import('../../features/tasks/task-detail.component').then((component) => component.TaskDetailComponent)
       },
       {

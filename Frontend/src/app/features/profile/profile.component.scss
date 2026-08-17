@@ -1,4 +1,4 @@
-.page-header {
+.screen-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -16,13 +16,13 @@
   font-size: 12px;
 }
 
-.page-header h1 {
+.screen-header h1 {
   margin: 4px 0;
   font-size: 36px;
   line-height: 1.08;
 }
 
-.page-header p {
+.screen-header p {
   margin: 0;
   color: var(--wp-text-muted);
 }
@@ -142,11 +142,11 @@
 }
 
 @media (max-width: 900px) {
-  .page-header {
+  .screen-header {
     align-items: flex-start;
   }
 
-  .page-header h1 {
+  .screen-header h1 {
     font-size: 30px;
   }
 

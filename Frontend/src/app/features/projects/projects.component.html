@@ -1,5 +1,11 @@
 <section class="screen">
-  <app-page-header eyebrow="Projects" title="Projects" subtitle="Track project health and the work attached to each client." />
+  <div class="screen-header">
+    <div>
+      <p class="eyebrow">Projects</p>
+      <h1>Projects</h1>
+      <p class="subheading">Track project health and the work attached to each client.</p>
+    </div>
+  </div>
 
   @if (loading()) {
     <app-loading-state message="Loading projects..." />
@@ -7,10 +13,6 @@
     <app-error-state title="Projects unavailable" [message]="error()" actionLabel="Try Again" [retry]="loadData.bind(this)" />
   } @else {
     <div class="list-toolbar">
-      <label class="list-search">
-        <span class="sr-only">Search projects</span>
-        <input type="search" placeholder="Search" [value]="search()" (input)="search.set($any($event.target).value)" />
-      </label>
       <button type="button" (click)="openCreateProject()">+ New Project</button>
     </div>
 
@@ -64,6 +66,10 @@
               <div><span>Open Tasks</span><strong>{{ project.openTasks }}</strong></div>
               <div><span>Completed</span><strong>{{ project.completedTasks }}</strong></div>
             </div>
+            <div class="progress-cell">
+              <div class="progress-track"><span [style.width.%]="project.openTasks + project.completedTasks ? (project.completedTasks / (project.openTasks + project.completedTasks)) * 100 : 0"></span></div>
+              <small>{{ project.completedTasks }} / {{ project.openTasks + project.completedTasks }}</small>
+            </div>
             <div class="mobile-record__actions">
               <button type="button" class="secondary" (click)="selectProject(project)">Edit</button>
               <button type="button" class="secondary" (click)="removeProject(project.id)">Delete</button>
@@ -85,18 +91,10 @@
           </div>
           <button type="button" class="secondary" (click)="closeModal()">Close</button>
         </div>
-
         <form class="form-grid modal__form" [formGroup]="form" (ngSubmit)="saveProject()">
           @if (formError()) {
             <div class="field-error full-width">{{ formError() }}</div>
           }
-          <label>
-            <span>Project *</span>
-            <input formControlName="name" />
-            @if (form.controls.name.touched && form.controls.name.invalid) {
-              <small class="field-error">Project name is required.</small>
-            }
-          </label>
           <label>
             <span>Client *</span>
             <select formControlName="clientId">
@@ -110,6 +108,13 @@
             }
           </label>
           <label>
+            <span>Project *</span>
+            <input formControlName="name" />
+            @if (form.controls.name.touched && form.controls.name.invalid) {
+              <small class="field-error">Project name is required.</small>
+            }
+          </label>
+          <label>
             <span>Status *</span>
             <select formControlName="status">
               <option value="Active">Active</option>
@@ -118,6 +123,20 @@
             </select>
             @if (form.controls.status.touched && form.controls.status.invalid) {
               <small class="field-error">Status is required.</small>
+            }
+          </label>
+          <label>
+            <span>Total Tasks *</span>
+            <input type="number" min="0" formControlName="totalTasks" />
+            @if (form.controls.totalTasks.touched && form.controls.totalTasks.invalid) {
+              <small class="field-error">Total tasks is required.</small>
+            }
+          </label>
+          <label>
+            <span>Start Date *</span>
+            <input type="date" formControlName="startDate" />
+            @if (form.controls.startDate.touched && form.controls.startDate.invalid) {
+              <small class="field-error">Start date is required.</small>
             }
           </label>
           <label class="full-width">

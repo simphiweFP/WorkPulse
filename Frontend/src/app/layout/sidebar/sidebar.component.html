@@ -1,11 +1,8 @@
 <aside class="sidebar" [class.sidebar--open]="open">
   <div class="sidebar__brand">
-    <div class="sidebar__mark" aria-hidden="true"></div>
     <div>
       <h1>WorkPulse</h1>
-      <p>Know what matters today.</p>
     </div>
-    <button type="button" class="sidebar__close" aria-label="Close navigation" (click)="closeDrawer.emit()">✕</button>
   </div>
 
   @if (currentUser$ | async; as user) {
@@ -18,21 +15,20 @@
     </div>
 
     <nav class="sidebar__nav">
-      @if (!isDeveloper(user)) {
-        <a routerLink="/dashboard" routerLinkActive="is-active" (click)="closeDrawer.emit()">Dashboard</a>
-      }
-
       <a routerLink="/today" routerLinkActive="is-active" (click)="closeDrawer.emit()">Today</a>
       <a routerLink="/my-tasks" routerLinkActive="is-active" (click)="closeDrawer.emit()">My Tasks</a>
-      <a routerLink="/backlog" routerLinkActive="is-active" (click)="closeDrawer.emit()">Backlog</a>
-      <a routerLink="/sprints" routerLinkActive="is-active" (click)="closeDrawer.emit()">Sprints</a>
 
-      @if (!isDeveloper(user)) {
+      @if (user.role === 'Admin') {
         <p class="sidebar__section">WORK</p>
         <a routerLink="/clients" routerLinkActive="is-active" (click)="closeDrawer.emit()">Clients</a>
         <a routerLink="/projects" routerLinkActive="is-active" (click)="closeDrawer.emit()">Projects</a>
         <a routerLink="/tasks" routerLinkActive="is-active" (click)="closeDrawer.emit()">Tasks</a>
-        <a routerLink="/team" routerLinkActive="is-active" (click)="closeDrawer.emit()">Team</a>
+        <a routerLink="/backlog" routerLinkActive="is-active" (click)="closeDrawer.emit()">Sprint Planning / Backlog</a>
+        <a routerLink="/sprints" routerLinkActive="is-active" (click)="closeDrawer.emit()">Sprint Planning</a>
+        <a routerLink="/team" routerLinkActive="is-active" (click)="closeDrawer.emit()">User Management</a>
+      } @else {
+        <a routerLink="/backlog" routerLinkActive="is-active" (click)="closeDrawer.emit()">Backlog</a>
+        <a routerLink="/sprints" routerLinkActive="is-active" (click)="closeDrawer.emit()">Sprint View</a>
       }
 
       <p class="sidebar__section">ACCOUNT</p>
@@ -41,10 +37,4 @@
     </nav>
   }
 
-  <div class="sidebar__panel">
-    <strong>Stay focused.</strong>
-    <p>WorkPulse gives your team clarity, focus and momentum across every priority.</p>
-    <div class="sidebar__panel-illustration" aria-hidden="true"></div>
-    <small>v1.0.0</small>
-  </div>
 </aside>

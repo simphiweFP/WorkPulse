@@ -40,6 +40,8 @@ export class ProjectService {
       clientId: project.clientId,
       name: project.name,
       clientName: project.clientName,
+      totalTasks: project.totalTasks,
+      startDate: project.startDate,
       status: project.status,
       openTasks: project.openTaskCount,
       completedTasks: project.completedTaskCount

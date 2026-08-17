@@ -4,7 +4,13 @@
   } @else if (error()) {
     <app-error-state title="Project unavailable" [message]="error()" actionLabel="Try Again" [retry]="loadProject.bind(this)" />
   } @else if (project(); as model) {
-    <app-page-header eyebrow="Projects" [title]="model.name" subtitle="Project details and associated tasks." />
+    <div class="screen-header">
+      <div>
+        <p class="eyebrow">Projects</p>
+        <h1>{{ model.name }}</h1>
+        <p class="subheading">Project details and associated tasks.</p>
+      </div>
+    </div>
     <div class="summary-row">
       <article class="summary-card"><span class="summary-card__icon summary-card__icon--info"></span><div><strong>{{ model.clientName }}</strong><p>Client</p><small>Account owner</small></div></article>
       <article class="summary-card"><span class="summary-card__icon summary-card__icon--warning"></span><div><strong>{{ model.status }}</strong><p>Status</p><small>Current delivery state</small></div></article>

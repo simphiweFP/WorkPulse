@@ -8,6 +8,7 @@
   </div>
 
   <div class="task-card__meta">
+    <span>{{ task().type }}</span>
     <app-status-badge [status]="task().status" />
     <span>{{ deadlineLabel() }}</span>
   </div>
@@ -15,7 +16,7 @@
   <p class="reason"><strong>Why this matters:</strong> {{ task().reason }}</p>
 
   <div class="task-card__actions">
-    @if (actionLabel()) {
+    @if (!readonlyMode() && actionLabel() && task().status !== 'Completed') {
       <button type="button" (click)="action.emit(task())">{{ actionLabel() }}</button>
     }
     <button type="button" class="secondary" (click)="view.emit(task())">View</button>

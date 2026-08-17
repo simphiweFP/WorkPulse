@@ -137,7 +137,7 @@
 
 .today-screen {
   display: grid;
-  gap: 14px;
+  gap: 18px;
 }
 
 .summary-grid {
@@ -187,16 +187,46 @@
 .today-grid,
 .lane-grid {
   display: grid;
-  gap: 14px;
+  gap: 16px;
 }
 
 .today-grid {
-  grid-template-columns: minmax(0, 1.7fr) minmax(280px, 0.9fr);
+  grid-template-columns: minmax(0, 1.65fr) minmax(300px, 0.95fr);
+  align-items: start;
+  margin-top: 8px;
 }
 
 .today-priority-panel {
   background: linear-gradient(180deg, #fffafc 0%, #fff 100%);
-  border-color: #f1d5e7;
+  border: 1px solid rgba(79, 70, 229, 0.12);
+  box-shadow: var(--wp-shadow-sm);
+}
+
+.today-grid__aside {
+  margin-top: 10px;
+}
+
+.today-top-priority {
+  display: grid;
+  gap: 10px;
+}
+
+.today-top-priority__badge {
+  display: inline-flex;
+  width: fit-content;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(79, 70, 229, 0.12);
+  background: #eef2ff;
+  color: #4f46e5;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.today-top-priority__spacer {
+  min-height: 160px;
 }
 
 .lane-grid {
@@ -204,7 +234,7 @@
 }
 
 .panel {
-  padding: 16px;
+  padding: 18px;
 }
 
 .section-header {
@@ -212,7 +242,7 @@
   align-items: flex-start;
   justify-content: space-between;
   gap: 12px;
-  margin-bottom: 14px;
+  margin-bottom: 16px;
 }
 
 .section-header h2 {
@@ -234,19 +264,20 @@
 
 .compact-panel {
   display: grid;
-  gap: 12px;
+  gap: 14px;
 }
 
 .compact-panel__text {
   margin: 0;
   color: var(--wp-text-muted);
   max-width: 52ch;
+  line-height: 1.55;
 }
 
 .compact-list {
   list-style: none;
   display: grid;
-  gap: 10px;
+  gap: 12px;
   padding: 0;
   margin: 0;
 }
@@ -255,7 +286,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 10px 12px;
+  padding: 12px 14px;
   border-radius: 14px;
   background: #f8fafc;
   border: 1px solid #edf2fb;
@@ -272,7 +303,7 @@
 
 .task-stack {
   display: grid;
-  gap: 12px;
+  gap: 14px;
 }
 
 @media (max-width: 1200px) {
@@ -305,7 +336,7 @@
 
 @media (min-width: 1201px) {
   .today-grid {
-    grid-template-columns: minmax(0, 1.5fr) minmax(260px, 0.85fr);
+    grid-template-columns: minmax(0, 1.55fr) minmax(280px, 0.9fr);
   }
 
   .lane-grid {

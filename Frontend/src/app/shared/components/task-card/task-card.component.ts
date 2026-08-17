@@ -12,6 +12,7 @@ import { TaskRecommendation } from '../../models/task.models';
 export class TaskCardComponent {
   task = input.required<TaskRecommendation>();
   actionLabel = input<string>('');
+  readonlyMode = input<boolean>(false);
   action = output<TaskRecommendation>();
   view = output<TaskRecommendation>();
 

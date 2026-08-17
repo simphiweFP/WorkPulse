@@ -3,13 +3,12 @@ import { Component, OnInit, inject, signal } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { catchError, of } from 'rxjs';
 import { TaskService } from '../../core/services/task.service';
-import { PageHeaderComponent } from '../../shared/components/page-header/page-header.component';
 import { TaskAdminSummary } from '../../core/models/task-admin.models';
 
 @Component({
   selector: 'app-task-detail',
   standalone: true,
-  imports: [CommonModule, DatePipe, PageHeaderComponent],
+  imports: [CommonModule, DatePipe],
   styleUrl: './task-detail.component.scss',
   templateUrl: './task-detail.component.html'
 })
@@ -46,6 +45,8 @@ export class TaskDetailComponent implements OnInit {
           clientId: task.clientId,
           projectId: task.projectId,
           title: task.title,
+          type: task.type,
+          storyPoints: task.storyPoints,
           clientName: task.clientName,
           projectName: task.projectName,
           sprintName: task.sprintName,

@@ -1,7 +1,6 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { RouterLink } from '@angular/router';
 import { catchError, finalize, of } from 'rxjs';
 import { ClientSummary } from '../../core/models/client.models';
 import { ProjectSummary, ProjectUpsertRequest } from '../../core/models/project.models';
@@ -10,13 +9,13 @@ import { ProjectService } from '../../core/services/project.service';
 import { EmptyStateComponent } from '../../shared/components/empty-state/empty-state.component';
 import { ErrorStateComponent } from '../../shared/components/error-state/error-state.component';
 import { LoadingStateComponent } from '../../shared/components/loading-state/loading-state.component';
-import { PageHeaderComponent } from '../../shared/components/page-header/page-header.component';
+import { FeedbackAlertService } from '../../shared/services/feedback-alert.service';
 import { lockBodyScroll, unlockBodyScroll } from '../../shared/utilities/modal-state';
 
 @Component({
   selector: 'app-projects',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterLink, PageHeaderComponent, LoadingStateComponent, EmptyStateComponent, ErrorStateComponent],
+  imports: [CommonModule, ReactiveFormsModule, LoadingStateComponent, EmptyStateComponent, ErrorStateComponent],
   styleUrl: './projects.component.scss',
   templateUrl: './projects.component.html'
 })
@@ -24,20 +23,24 @@ export class ProjectsComponent implements OnInit {
   private readonly projectService = inject(ProjectService);
   private readonly clientService = inject(ClientService);
   private readonly fb = inject(FormBuilder);
+  private readonly alerts = inject(FeedbackAlertService);
 
   readonly projects = signal<ProjectSummary[]>([]);
   readonly clients = signal<ClientSummary[]>([]);
   readonly loading = signal(true);
   readonly submitting = signal(false);
   readonly selectedProjectId = signal('');
+  readonly selectedProject = signal<ProjectSummary | null>(null);
   readonly error = signal('');
   readonly formError = signal('');
   readonly modalOpen = signal(false);
-  readonly search = signal('');
+  // Search removed per request
 
   readonly form = this.fb.group({
     name: ['', Validators.required],
     clientId: ['', Validators.required],
+    totalTasks: [0, Validators.required],
+    startDate: ['', Validators.required],
     status: ['Active', Validators.required],
     description: ['', Validators.required]
   });
@@ -66,17 +69,14 @@ export class ProjectsComponent implements OnInit {
   }
 
   filteredProjects(): ProjectSummary[] {
-    const term = this.search().trim().toLowerCase();
-    if (!term) {
-      return this.projects();
-    }
-
-    return this.projects().filter((project) => `${project.name} ${project.clientName}`.toLowerCase().includes(term));
+    // Search removed — show all projects
+    return this.projects();
   }
 
   openCreateProject(): void {
     this.selectedProjectId.set('');
-    this.form.reset({ status: 'Active' });
+    this.selectedProject.set(null);
+    this.form.reset({ status: 'Active', startDate: '', totalTasks: 0 });
     this.formError.set('');
     this.modalOpen.set(true);
     lockBodyScroll();
@@ -84,9 +84,12 @@ export class ProjectsComponent implements OnInit {
 
   selectProject(project: ProjectSummary): void {
     this.selectedProjectId.set(project.id);
+    this.selectedProject.set(project);
     this.form.patchValue({
+      clientId: project.clientId,
       name: project.name,
-      clientId: '',
+      totalTasks: project.totalTasks,
+      startDate: this.toDateInputValue(project.startDate),
       status: project.status,
       description: ''
     });
@@ -98,7 +101,8 @@ export class ProjectsComponent implements OnInit {
   closeModal(): void {
     this.modalOpen.set(false);
     this.selectedProjectId.set('');
-    this.form.reset({ status: 'Active' });
+    this.selectedProject.set(null);
+    this.form.reset({ status: 'Active', startDate: '', totalTasks: 0 });
     this.formError.set('');
     unlockBodyScroll();
   }
@@ -117,15 +121,43 @@ export class ProjectsComponent implements OnInit {
 
     action$
       .pipe(finalize(() => this.submitting.set(false)))
-      .subscribe(() => {
-        this.closeModal();
-        this.loadData();
-      }, () => {
-        this.formError.set('We could not save this project right now. Please try again.');
+      .subscribe({
+        next: () => {
+          void this.alerts.success(
+            this.selectedProjectId() ? 'Project updated' : 'Project created',
+            this.selectedProjectId() ? 'The project was updated successfully.' : 'The project was created successfully.'
+          );
+          this.closeModal();
+          this.loadData();
+        },
+        error: () => {
+          this.formError.set('We could not save this project right now. Please try again.');
+          void this.alerts.error('Save failed', 'We could not save this project right now. Please try again.');
+        }
       });
   }
 
-  removeProject(id: string): void {
-    this.projectService.deleteProject(id).subscribe(() => this.loadData());
+  async removeProject(id: string): Promise<void> {
+    if (!(await this.alerts.confirmDestructive('Delete project?', 'This project will be permanently removed.', 'Delete'))) {
+      return;
+    }
+
+    this.projectService.deleteProject(id).subscribe({
+      next: () => {
+        void this.alerts.success('Project deleted', 'The project was deleted successfully.');
+        this.loadData();
+      },
+      error: () => {
+        void this.alerts.error('Delete failed', 'We could not delete this project right now. Please try again.');
+      }
+    });
+  }
+
+  private toDateInputValue(value: string | null | undefined): string {
+    return value ? value.slice(0, 10) : '';
+  }
+
+  formatProjectStartDate(value: string): string {
+    return value ? new Date(value).toLocaleDateString() : 'Not selected';
   }
 }

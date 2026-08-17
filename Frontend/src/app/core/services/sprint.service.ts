@@ -6,14 +6,18 @@ import { SprintDetails, SprintSummary, SprintUpsertRequest } from '../models/spr
 
 interface SprintResponse {
   id: string;
+  projectId: string;
   name: string;
   startDate: string;
   endDate: string;
   status: 'Planned' | 'Active' | 'Completed';
   createdAt: string;
   updatedAt: string;
+  totalTasks: number;
   taskCount: number;
   completedTaskCount: number;
+  totalPoints: number;
+  completedPoints: number;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -22,6 +26,12 @@ export class SprintService {
 
   getSprints(): Observable<SprintSummary[]> {
     return this.http.get<SprintResponse[]>(`${apiConfig.apiBaseUrl}/sprints`).pipe(
+      map((sprints) => sprints.map((sprint) => this.toSummary(sprint)))
+    );
+  }
+
+  getSprintsByProject(projectId: string): Observable<SprintSummary[]> {
+    return this.http.get<SprintResponse[]>(`${apiConfig.apiBaseUrl}/sprints/project/${projectId}`).pipe(
       map((sprints) => sprints.map((sprint) => this.toSummary(sprint)))
     );
   }
@@ -51,12 +61,16 @@ export class SprintService {
   private toSummary(sprint: SprintResponse): SprintSummary {
     return {
       id: sprint.id,
+      projectId: sprint.projectId,
       name: sprint.name,
       startDate: sprint.startDate,
       endDate: sprint.endDate,
       status: sprint.status,
+      totalTasks: sprint.totalTasks,
       taskCount: sprint.taskCount,
-      completedTaskCount: sprint.completedTaskCount
+      completedTaskCount: sprint.completedTaskCount,
+      totalPoints: sprint.totalPoints,
+      completedPoints: sprint.completedPoints
     };
   }
 

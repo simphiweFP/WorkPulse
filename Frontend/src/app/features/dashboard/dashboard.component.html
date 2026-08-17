@@ -7,31 +7,24 @@
       <p>{{ error() }}</p>
     </section>
   } @else if (dashboard(); as model) {
-    <app-page-header
-      eyebrow="Developer Today"
-      [title]="greeting() + ', ' + greetingName(model) + ' — focus first'"
-      subtitle="One clear place to see what needs attention now, what to start next, and what you already finished."
-      [meta]="formatDate(model.date)"
-    />
 
-    <div class="summary-grid summary-grid--today">
-      <article class="summary-card">
-        <span>Tasks Today</span>
-        <strong>{{ model.summary.tasksToday }}</strong>
-      </article>
-      <article class="summary-card summary-card--danger">
-        <span>Overdue</span>
-        <strong>{{ model.summary.overdue }}</strong>
-      </article>
-      <article class="summary-card summary-card--warning">
-        <span>Due Today</span>
-        <strong>{{ model.summary.deadlineToday }}</strong>
-      </article>
-      <article class="summary-card summary-card--accent">
-        <span>High Priority</span>
-        <strong>{{ model.summary.highPriority }}</strong>
-      </article>
-    </div>
+
+    @if (model.sprintWorkComplete) {
+      <section class="panel">
+        <app-empty-state
+          title="Your Sprint work is complete."
+          message="All work currently assigned to you for this Sprint has been completed."
+        />
+        <p class="compact-panel__text" style="margin-top: 1rem;">
+          @if (model.sprintName) {
+            <strong>{{ model.sprintName }}</strong>
+          }
+          <span>Completed {{ model.sprintCompletedPoints ?? 0 }} / {{ model.sprintTotalPoints ?? 0 }} story points.</span>
+          <span>Remaining work: {{ ((model.sprintTotalPoints ?? 0) - (model.sprintCompletedPoints ?? 0)) > 0 ? ((model.sprintTotalPoints ?? 0) - (model.sprintCompletedPoints ?? 0)) : 0 }} SP</span>
+        </p>
+      </section>
+    } @else if (model.topPriority.taskId || model.overdue.length || model.dueToday.length || model.recommendedNext.length || model.completedToday.length) {
+  
 
     <section class="today-grid">
       <article class="panel today-grid__main today-priority-panel">
@@ -43,7 +36,11 @@
         </div>
 
         @if (model.topPriority.taskId) {
-          <app-task-card [task]="model.topPriority" actionLabel="Continue Task" (action)="performTaskAction(model.topPriority)" />
+          <app-task-card
+            [task]="model.topPriority"
+            actionLabel="Start Task"
+            (view)="viewTask($event)"
+          />
         } @else {
           <app-empty-state title="Nothing urgent right now." message="No top-priority task is available." />
         }
@@ -57,8 +54,17 @@
               <h2>Quick signal</h2>
             </div>
           </div>
-          <p class="compact-panel__text">Overdue work comes first, then due-today items, then the next best task.</p>
+       <p class="compact-panel__text">Your Today view turns the active Sprint plan into a clear daily work list.
+  It shows the work assigned to you that needs attention now, so you do not
+  need to search through the backlog or Sprint manually.
+</p>
+
+<p class="compact-panel__text">Tasks are ordered by delivery risk: active work first, then overdue tasks,
+  work due today, and finally the best next planned task. This keeps the team
+  focused on the right work at the right time.
+</p>
           <ul class="compact-list">
+            <li><strong>{{ model.summary.tasksToday }}</strong><span>Tasks today</span></li>
             <li><strong>{{ model.summary.overdue }}</strong><span>Overdue</span></li>
             <li><strong>{{ model.summary.deadlineToday }}</strong><span>Due today</span></li>
             <li><strong>{{ model.summary.highPriority }}</strong><span>High priority</span></li>
@@ -73,7 +79,7 @@
         @if (model.overdue.length) {
           <div class="task-stack">
             @for (task of model.overdue; track task.taskId) {
-              <app-task-card [task]="task" actionLabel="Start" (action)="performTaskAction(task)" />
+              <app-task-card [task]="task" actionLabel="Start" (view)="viewTask($event)" />
             }
           </div>
         } @else {
@@ -86,7 +92,7 @@
         @if (model.dueToday.length) {
           <div class="task-stack">
             @for (task of model.dueToday; track task.taskId) {
-              <app-task-card [task]="task" actionLabel="Start" (action)="performTaskAction(task)" />
+              <app-task-card [task]="task" actionLabel="Start" (view)="viewTask($event)" />
             }
           </div>
         } @else {
@@ -99,7 +105,7 @@
         @if (model.recommendedNext.length) {
           <div class="task-stack">
             @for (task of model.recommendedNext; track task.taskId) {
-              <app-task-card [task]="task" actionLabel="Continue Task" (action)="performTaskAction(task)" />
+              <app-task-card [task]="task" actionLabel="Start Task" (view)="viewTask($event)" />
             }
           </div>
         } @else {
@@ -112,7 +118,7 @@
         @if (model.completedToday.length) {
           <div class="task-stack">
             @for (task of model.completedToday; track task.taskId) {
-              <app-task-card [task]="task" actionLabel="" />
+              <app-task-card [task]="task" actionLabel="" [readonlyMode]="true" (view)="viewTask($event)" />
             }
           </div>
         } @else {
@@ -120,5 +126,10 @@
         }
       </article>
     </section>
+    } @else {
+      <section class="panel">
+        <app-empty-state title="No tasks found" message="There are no visible sprint tasks for today." />
+      </section>
+    }
   }
 </section>

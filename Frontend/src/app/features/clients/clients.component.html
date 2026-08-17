@@ -1,17 +1,21 @@
 <section class="screen">
-  <app-page-header eyebrow="Clients" title="Clients" subtitle="Manage customer accounts, contacts, and open work in one place." />
+  <div class="screen-header">
+    <div>
+      <p class="eyebrow">Clients</p>
+      <h1>Clients</h1>
+      <p class="subheading">Manage customer accounts, contacts, and open work in one place.</p>
+    </div>
+  </div>
 
   @if (loading()) {
     <app-loading-state message="Loading clients..." />
-  } @else if (error()) {
+  } @if (error()) {
     <app-error-state title="Clients unavailable" [message]="error()" actionLabel="Try Again" [retry]="loadClients.bind(this)" />
   } @else {
     <div class="list-toolbar">
-      <label class="list-search">
-        <span class="sr-only">Search clients</span>
-        <input type="search" placeholder="Search" [value]="search()" (input)="search.set(($any($event.target).value))" />
-      </label>
-      <button type="button" (click)="openCreateClient()">+ New Client</button>
+      <div class="list-toolbar__actions">
+        <button type="button" (click)="openCreateClient()">+ New Client</button>
+      </div>
     </div>
 
     @if (filteredClients().length) {

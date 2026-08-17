@@ -1,4 +1,4 @@
-import { TaskPriority, TaskStatus } from '../../shared/models/task.models';
+import { TaskPriority, TaskStatus, TaskType } from '../../shared/models/task.models';
 
 export interface TaskAssigneeOption {
   id: string;
@@ -16,10 +16,15 @@ export interface TaskAdminSummary {
   clientId: string;
   projectId: string;
   title: string;
+  description?: string;
+  type: TaskType;
+  storyPoints: number;
+  sprintOrder?: number | null;
   clientName: string;
   projectName: string;
   sprintId?: string | null;
   sprintName?: string;
+  assigneeId?: string | null;
   assigneeName: string;
   priority: TaskPriority;
   deadline: string;
@@ -32,7 +37,11 @@ export interface TaskUpsertRequest {
   clientId: string;
   projectId: string;
   sprintId?: string | null;
+  type: TaskType;
   priority: TaskPriority;
+  status: TaskStatus;
+  storyPoints: number;
+  sprintOrder?: number | null;
   deadline: string;
   assigneeId: string;
 }

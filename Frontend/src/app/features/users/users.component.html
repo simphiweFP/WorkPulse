@@ -1,74 +1,123 @@
 <section class="screen">
-  <div class="page-header">
+  <div class="screen-header">
     <div>
-      <p class="eyebrow">Team</p>
-      <h1>Team & Access</h1>
-      <p>Manage the people working in WorkPulse and keep access aligned to roles.</p>
+      <p class="eyebrow">Admin</p>
+      <h1>User Management</h1>
+      <p>Review registered accounts and assign the access role each person needs.</p>
     </div>
-    <button type="button">Invite Member</button>
   </div>
 
-  <div class="summary-row">
-    <article class="summary-card">
-      <span class="summary-card__icon summary-card__icon--info"></span>
-      <div>
-        <strong>{{ memberCount() }}</strong>
-        <p>Team members</p>
-        <small>People in WorkPulse</small>
-      </div>
-    </article>
-    <article class="summary-card">
-      <span class="summary-card__icon summary-card__icon--success"></span>
-      <div>
-        <strong>{{ totalActiveTasks() }}</strong>
-        <p>Active tasks</p>
-        <small>Assigned work</small>
-      </div>
-    </article>
-    <article class="summary-card">
-      <span class="summary-card__icon summary-card__icon--warning"></span>
-      <div>
-        <strong>{{ totalInProgressTasks() }}</strong>
-        <p>In progress</p>
-        <small>Work moving now</small>
-      </div>
-    </article>
-    <article class="summary-card">
-      <span class="summary-card__icon summary-card__icon--danger"></span>
-      <div>
-        <strong>{{ totalCompletedTasks() }}</strong>
-        <p>Completed</p>
-        <small>Finished work</small>
-      </div>
-    </article>
-  </div>
+  @if (loading()) {
+    <p class="state-message">Loading users...</p>
+  } @else if (error(); as errorMessage) {
+    <div class="state-card">
+      <p>{{ errorMessage }}</p>
+      <button type="button" (click)="loadUsers()">Retry</button>
+    </div>
+  } @else {
+    <div class="summary-row">
+      <article class="summary-card">
+        <span class="summary-card__icon summary-card__icon--info"></span>
+        <div>
+          <strong>{{ totalUsers() }}</strong>
+          <p>Total registered users</p>
+          <small>Registered accounts</small>
+        </div>
+      </article>
+      <article class="summary-card">
+        <span class="summary-card__icon summary-card__icon--warning"></span>
+        <div>
+          <strong>{{ pendingCount() }}</strong>
+          <p>Awaiting role assignment</p>
+          <small>Awaiting access</small>
+        </div>
+      </article>
+      <article class="summary-card">
+        <span class="summary-card__icon summary-card__icon--success"></span>
+        <div>
+          <strong>{{ developerCount() }}</strong>
+          <p>Developers</p>
+          <small>Operational users</small>
+        </div>
+      </article>
+      <article class="summary-card">
+        <span class="summary-card__icon summary-card__icon--danger"></span>
+        <div>
+          <strong>{{ adminCount() }}</strong>
+          <p>Administrators</p>
+          <small>Full access</small>
+        </div>
+      </article>
+    </div>
 
-  <div class="table-card">
-    <table>
-      <thead>
-        <tr>
-          <th>Name</th>
-          <th>Role</th>
-          <th>Active Tasks</th>
-          <th>In Progress</th>
-          <th>Completed</th>
-        </tr>
-      </thead>
-      <tbody>
-        @for (developer of developers(); track developer.id) {
-          <tr>
-            <td>
-              <strong>{{ developer.fullName }}</strong>
-              <br />
-              <small>{{ developer.email }}</small>
-            </td>
-            <td>Developer</td>
-            <td>{{ developer.activeTaskCount }}</td>
-            <td>{{ developer.inProgressTaskCount }}</td>
-            <td>{{ developer.completedTaskCount }}</td>
-          </tr>
+    @if (users().length === 0) {
+      <div class="state-card">
+        <p>No users found.</p>
+      </div>
+    } @else {
+      <div class="table-card">
+        <table>
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Email</th>
+              <th>Registration date</th>
+              <th>Current role</th>
+              <th>Account status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (user of users(); track user.id) {
+              <tr>
+                <td><strong>{{ user.fullName }}</strong></td>
+                <td>{{ user.email }}</td>
+                <td>{{ user.createdAt | date: 'mediumDate' }}</td>
+                <td><span [class]="roleBadgeClass(user)">{{ roleLabel(user) }}</span></td>
+                <td>
+                  @if (isPending(user)) {
+                    <span class="badge badge--warning">Awaiting access</span>
+                  } @else {
+                    <span class="badge badge--active">Active</span>
+                  }
+                </td>
+                <td>
+                  @if (isCurrentUser(user)) {
+                    <span class="self-note">Current user</span>
+                  } @else {
+                    <button type="button" (click)="openManageRole(user)">Manage role</button>
+                  }
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  }
+
+  @if (modalOpen() && selectedUser(); as user) {
+    <div class="modal-backdrop" (click)="closeModal()">
+      <div class="modal-card" (click)="$event.stopPropagation()">
+        <h2>Manage role</h2>
+        <p class="modal-subtitle">{{ user.fullName }} ({{ user.email }})</p>
+
+        <label for="role">Role</label>
+        <select id="role" [ngModel]="selectedRole()" (ngModelChange)="selectedRole.set($event)">
+          @for (role of assignableRoles; track role) {
+            <option [value]="role">{{ role }}</option>
+          }
+        </select>
+
+        @if (selectedRole() === 'Admin') {
+          <p class="modal-warning">Administrators can manage users, roles, projects, sprints, and workspace settings.</p>
         }
-      </tbody>
-    </table>
-  </div>
+
+        <div class="modal-actions">
+          <button type="button" class="btn-secondary" (click)="closeModal()" [disabled]="saving()">Cancel</button>
+          <button type="button" (click)="saveRole()" [disabled]="saving()">{{ saving() ? 'Saving...' : 'Save role' }}</button>
+        </div>
+      </div>
+    </div>
+  }
 </section>

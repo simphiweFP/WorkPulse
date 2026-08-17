@@ -4,7 +4,13 @@
   } @else if (error()) {
     <app-error-state title="Client unavailable" [message]="error()" actionLabel="Try Again" [retry]="loadClient.bind(this)" />
   } @else if (client(); as model) {
-    <app-page-header eyebrow="Clients" [title]="model.name" subtitle="Client information, projects, and task summary." />
+    <div class="screen-header">
+      <div>
+        <p class="eyebrow">Clients</p>
+        <h1>{{ model.name }}</h1>
+        <p class="subheading">Client information, projects, and task summary.</p>
+      </div>
+    </div>
     <div class="summary-row">
       <article class="summary-card"><span class="summary-card__icon summary-card__icon--info"></span><div><strong>{{ model.projects }}</strong><p>Projects</p><small>Active and completed delivery streams</small></div></article>
       <article class="summary-card"><span class="summary-card__icon summary-card__icon--warning"></span><div><strong>{{ model.openTasks }}</strong><p>Open tasks</p><small>Current operational work</small></div></article>
