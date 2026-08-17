@@ -41,7 +41,7 @@ export class ProjectsComponent implements OnInit {
     clientId: ['', Validators.required],
     totalTasks: [0, Validators.required],
     startDate: ['', Validators.required],
-    status: ['Active', Validators.required],
+    status: ['', Validators.required],
     description: ['', Validators.required]
   });
 
@@ -76,7 +76,7 @@ export class ProjectsComponent implements OnInit {
   openCreateProject(): void {
     this.selectedProjectId.set('');
     this.selectedProject.set(null);
-    this.form.reset({ status: 'Active', startDate: '', totalTasks: 0 });
+    this.form.reset({ status: '', startDate: '', totalTasks: 0 });
     this.formError.set('');
     this.modalOpen.set(true);
     lockBodyScroll();
@@ -102,7 +102,7 @@ export class ProjectsComponent implements OnInit {
     this.modalOpen.set(false);
     this.selectedProjectId.set('');
     this.selectedProject.set(null);
-    this.form.reset({ status: 'Active', startDate: '', totalTasks: 0 });
+    this.form.reset({ status: '', startDate: '', totalTasks: 0 });
     this.formError.set('');
     unlockBodyScroll();
   }

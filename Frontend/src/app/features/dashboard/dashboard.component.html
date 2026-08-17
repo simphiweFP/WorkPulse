@@ -39,6 +39,7 @@
           <app-task-card
             [task]="model.topPriority"
             actionLabel="Start Task"
+            (action)="performTaskAction($event)"
             (view)="viewTask($event)"
           />
         } @else {
@@ -105,7 +106,7 @@
         @if (model.recommendedNext.length) {
           <div class="task-stack">
             @for (task of model.recommendedNext; track task.taskId) {
-              <app-task-card [task]="task" actionLabel="Start Task" (view)="viewTask($event)" />
+              <app-task-card [task]="task" actionLabel="Start" (action)="performTaskAction($event)"  (view)="viewTask($event)" />
             }
           </div>
         } @else {

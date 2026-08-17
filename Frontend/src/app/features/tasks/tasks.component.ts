@@ -5,6 +5,7 @@ import { catchError, finalize, forkJoin, map, of } from 'rxjs';
 import { ClientSummary } from '../../core/models/client.models';
 import { ProjectSummary } from '../../core/models/project.models';
 import { TaskAdminSummary, TaskAssigneeOption, TaskUpsertRequest } from '../../core/models/task-admin.models';
+import { TaskType, TaskPriority, TaskStatus } from '../../shared/models/task.models';
 import { ClientService } from '../../core/services/client.service';
 import { ProjectService } from '../../core/services/project.service';
 import { TaskFilter, TaskService } from '../../core/services/task.service';
@@ -78,11 +79,11 @@ export class TasksComponent implements OnInit {
     description: ['', Validators.required],
     clientId: ['', Validators.required],
     projectId: ['', Validators.required],
-    type: ['Story', Validators.required],
+    type: ['', Validators.required],
     storyPoints: [1, [Validators.required, Validators.min(1)]],
     sprintId: [''],
-    priority: ['Medium', Validators.required],
-    status: ['Todo', Validators.required],
+    priority: ['', Validators.required],
+    status: ['', Validators.required],
     deadline: ['', Validators.required],
     assigneeId: ['', Validators.required]
   });
@@ -118,15 +119,7 @@ export class TasksComponent implements OnInit {
     ).subscribe((projects) => this.availableProjects.set(projects));
   }
 
-  private syncAvailableProjectsForForm(): void {
-    const clientId = this.form.controls.clientId.value;
-    if (!clientId) {
-      this.availableProjects.set(this.projects());
-      return;
-    }
 
-    this.loadProjectsForClient(clientId);
-  }
 
   loadData(): void {
     this.loading.set(true);
@@ -191,17 +184,29 @@ export class TasksComponent implements OnInit {
 
   onClientChange(): void {
     this.form.controls.projectId.setValue('');
-    const clientId = this.form.controls.clientId.value;
-    this.loadProjectsForClient(clientId ?? '');
+    const clientId = (this.form.controls.clientId.value ?? '') as string;
+    this.loadProjectsForClient(clientId);
   }
 
   onProjectChange(): void {
+    // When project changes, clear sprint selection so user must choose explicitly
+    this.form.controls.sprintId.setValue(null);
+  }
+
+  private syncAvailableProjectsForForm(): void {
+    const clientId = (this.form.controls.clientId.value ?? '') as string;
+    if (!clientId) {
+      this.availableProjects.set(this.projects());
+      return;
+    }
+
+    this.loadProjectsForClient(clientId);
   }
 
   openCreateTask(): void {
     this.closeTaskModal();
     this.selectedTaskId.set('');
-    this.form.reset({ priority: 'Medium', sprintId: null, storyPoints: 1, status: 'Todo', type: 'Story' });
+    this.form.reset({ priority: '', sprintId: null, storyPoints: 1, status: '', type: '' });
     this.formError.set('');
     this.taskFormOpen.set(true);
     lockBodyScroll();
@@ -236,7 +241,7 @@ export class TasksComponent implements OnInit {
   closeTaskForm(): void {
     this.taskFormOpen.set(false);
     this.selectedTaskId.set('');
-    this.form.reset({ priority: 'Medium', sprintId: null, storyPoints: 1, status: 'Todo', type: 'Story' });
+    this.form.reset({ priority: '', sprintId: null, storyPoints: 1, status: '', type: '' });
     this.formError.set('');
     unlockBodyScroll();
   }
@@ -260,88 +265,92 @@ export class TasksComponent implements OnInit {
       return;
     }
 
+    const raw = this.form.getRawValue();
+    const clientId: string = (raw.clientId ?? '') as string;
+    const projectId: string = (raw.projectId ?? '') as string;
+    const type = (raw.type ?? 'Story') as TaskType;
+    const storyPoints = Number(raw.storyPoints ?? 1);
+    const priority = (raw.priority ?? 'Medium') as TaskPriority;
+    const status = (raw.status ?? 'Todo') as TaskStatus;
+    const deadline: string = (raw.deadline ?? '') as string;
+    const assigneeId: string = (raw.assigneeId ?? '') as string;
+
+    const request: TaskUpsertRequest = {
+      title: (raw.title ?? '') as string,
+      description: (raw.description ?? '') as string,
+      clientId,
+      projectId,
+      sprintId: raw.sprintId ?? null,
+      type,
+      priority,
+      status,
+      storyPoints,
+      // sprintOrder omitted when not present in form
+      deadline,
+      assigneeId
+    };
+
+    const action$ = this.selectedTaskId() ? this.taskService.updateTask(this.selectedTaskId(), request) : this.taskService.createTask(request);
+
     this.submitting.set(true);
-    this.error.set('');
     this.formError.set('');
-    const currentStatus = this.tasks().find((task) => task.id === this.selectedTaskId())?.status ?? 'Todo';
-    const request = {
-      ...this.form.getRawValue(),
-      status: currentStatus
-    } as TaskUpsertRequest;
-    const action$ = this.selectedTaskId()
-      ? this.taskService.updateTask(this.selectedTaskId(), request).pipe(map(() => void 0))
-      : this.taskService.createTask(request).pipe(map(() => void 0));
 
     action$
       .pipe(finalize(() => this.submitting.set(false)))
       .subscribe({
         next: () => {
-          void this.alerts.success(
-            this.selectedTaskId() ? 'Task updated' : 'Task created',
-            this.selectedTaskId() ? 'The task was updated successfully.' : 'The task was created successfully.'
-          );
+          void this.alerts.success(this.selectedTaskId() ? 'Task updated' : 'Task created', this.selectedTaskId() ? 'The task was updated successfully.' : 'The task was created successfully.');
           this.closeTaskForm();
           this.loadData();
         },
         error: () => {
-          this.formError.set('We could not save that task right now. Please try again.');
-          void this.alerts.error('Save failed', 'We could not save that task right now. Please try again.');
+          this.formError.set('We could not save this task right now. Please try again.');
+          void this.alerts.error('Save failed', 'We could not save this task right now. Please try again.');
         }
       });
   }
 
-  async startTask(id: string): Promise<void> {
-    if (!(await this.alerts.confirmAction('Start task?', 'This will move the task into progress.', 'Start'))) {
+  deleteTask(id: string): void {
+    if (!confirm('Delete this task?')) {
       return;
     }
 
-    this.runModalAction('start', 'We could not start that task right now. Please try again.', this.taskService.startTask(id));
-  }
-
-  async completeTask(id: string): Promise<void> {
-    if (!(await this.alerts.confirmAction('Complete task?', 'This will mark the task as completed.', 'Complete'))) {
-      return;
-    }
-
-    this.runModalAction('complete', 'We could not complete that task right now. Please try again.', this.taskService.completeTask(id));
-  }
-
-  async deleteTask(id: string): Promise<void> {
-    if (!(await this.alerts.confirmDestructive('Delete task?', 'This task will be permanently removed.', 'Delete'))) {
-      return;
-    }
-
-    this.runModalAction('delete', 'We could not delete that task right now. Please try again.', this.taskService.deleteTask(id));
-  }
-
-  private runModalAction(action: 'start' | 'complete' | 'delete', failureMessage: string, request$: { subscribe: (observer: { next: () => void; error: () => void }) => unknown }): void {
-    this.modalActionBusy.set(action);
-    this.error.set('');
-
-    request$.subscribe({
+    this.taskService.deleteTask(id).subscribe({
       next: () => {
-        const messages = {
-          start: ['Task started', 'The task was started successfully.'],
-          complete: ['Task completed', 'The task was completed successfully.'],
-          delete: ['Task deleted', 'The task was deleted successfully.']
-        } as const;
-        const [title, text] = messages[action];
-        void this.alerts.success(title, text);
-        this.closeTaskModal();
+        void this.alerts.success('Task deleted', 'The task was deleted successfully.');
         this.loadData();
       },
       error: () => {
-        this.error.set(failureMessage);
-        const messages = {
-          start: ['Start failed', 'We could not start that task right now. Please try again.'],
-          complete: ['Complete failed', 'We could not complete that task right now. Please try again.'],
-          delete: ['Delete failed', 'We could not delete that task right now. Please try again.']
-        } as const;
-        const [title, text] = messages[action];
-        void this.alerts.error(title, text);
-        this.modalActionBusy.set(null);
+        void this.alerts.error('Delete failed', 'We could not delete this task right now. Please try again.');
       }
     });
   }
 
+  startTask(id: string): void {
+    this.modalActionBusy.set('start');
+    this.taskService.startTask(id).subscribe({
+      next: () => {
+        this.modalActionBusy.set(null);
+        this.loadData();
+      },
+      error: () => {
+        this.modalActionBusy.set(null);
+        void this.alerts.error('Action failed', 'We could not start this task right now. Please try again.');
+      }
+    });
+  }
+
+  completeTask(id: string): void {
+    this.modalActionBusy.set('complete');
+    this.taskService.completeTask(id).subscribe({
+      next: () => {
+        this.modalActionBusy.set(null);
+        this.loadData();
+      },
+      error: () => {
+        this.modalActionBusy.set(null);
+        void this.alerts.error('Action failed', 'We could not complete this task right now. Please try again.');
+      }
+    });
+  }
 }

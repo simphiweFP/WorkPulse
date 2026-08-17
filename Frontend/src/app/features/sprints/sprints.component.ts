@@ -62,7 +62,7 @@ export class SprintsComponent implements OnInit {
     name: ['', Validators.required],
     startDate: ['', Validators.required],
     endDate: ['', Validators.required],
-    status: ['Planned', Validators.required],
+    status: ['', Validators.required],
     totalTasks: [0, [Validators.required, Validators.min(0)]]
   });
 
@@ -103,6 +103,25 @@ export class SprintsComponent implements OnInit {
     return this.sprintProgressLabel(sprint);
   }
 
+  sprintDisplayStatus(sprint: SprintSummary): string {
+  if (sprint.status === 'Completed') {
+    return 'Completed';
+  }
+
+  const startDate = new Date(sprint.startDate);
+  startDate.setHours(0, 0, 0, 0);
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const hasTasks = (sprint.taskCount ?? 0) > 0;
+
+  if (sprint.status === 'Planned' && hasTasks && startDate <= today) {
+    return 'Active';
+  }
+
+  return sprint.status;
+}
   ngOnInit(): void {
     this.loadSprints();
     this.taskSelectionForm.controls.taskId.valueChanges.subscribe(() => {
@@ -189,7 +208,7 @@ export class SprintsComponent implements OnInit {
       return;
     }
     this.selectedSprintId.set('');
-    this.form.reset({ status: 'Planned', totalTasks: 0 });
+    this.form.reset({ status: '', totalTasks: 0 });
     this.availableProjects.set(this.projects());
     this.formError.set('');
     this.closeSprintTaskDrawer();
@@ -224,7 +243,7 @@ export class SprintsComponent implements OnInit {
     this.modalOpen.set(false);
     this.selectedSprintId.set('');
     this.selectedSprint.set(null);
-    this.form.reset({ status: 'Planned', totalTasks: 0 });
+    this.form.reset({ status: '', totalTasks: 0 });
     this.availableProjects.set(this.projects());
     this.formError.set('');
     this.closeSprintTaskDrawer();

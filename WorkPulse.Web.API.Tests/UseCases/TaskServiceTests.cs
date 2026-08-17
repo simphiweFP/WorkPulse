@@ -494,6 +494,59 @@ public class TaskServiceTests
         Assert.Equal("dev-1", tasks[taskId].AssignedToUserId);
     }
 
+    [Fact]
+    public async Task FullWorkflow_CreateAssignComplete_UpdatesTaskState()
+    {
+        // Arrange
+        var now = new DateTime(2026, 8, 14, 9, 0, 0, DateTimeKind.Utc);
+        var clientId = Guid.NewGuid();
+        var projectId = Guid.NewGuid();
+        var sprintId = Guid.NewGuid();
+
+        var users = new Dictionary<string, ApplicationUser>
+        {
+            ["dev-1"] = new ApplicationUser { Id = "dev-1", Email = "dev@example.com", UserName = "dev@example.com", FirstName = "Dev", LastName = "One" }
+        };
+
+        var projects = new Dictionary<Guid, Project>
+        {
+            [projectId] = new Project { Id = projectId, ClientId = clientId, Name = "Proj", Description = "Test", Status = ProjectStatus.Active, CreatedAt = now, UpdatedAt = now }
+        };
+
+        var sprints = new Dictionary<Guid, Sprint>
+        {
+            [sprintId] = new Sprint { Id = sprintId, ProjectId = projectId, Name = "Sprint 1", StartDate = now, EndDate = now.AddDays(7), Status = SprintStatus.Active, CreatedAt = now, UpdatedAt = now }
+        };
+
+        var tasks = new Dictionary<Guid, TaskItem>();
+
+        var service = CreateService(tasks: tasks, projects: projects, sprints: sprints, users: users);
+
+        // Act
+        var created = await service.CreateAsync(new CreateTaskRequestDto
+        {
+            ClientId = clientId,
+            ProjectId = projectId,
+            SprintId = sprintId,
+            Title = "Flow Task",
+            Description = "End-to-end",
+            StoryPoints = 3,
+            Priority = TaskPriority.Medium,
+            Status = TaskStatus.Todo
+        });
+
+        await service.AssignAsync(created.Id, new AssignTaskRequestDto { UserId = "dev-1" });
+        await service.UpdateStatusAsync(created.Id, "dev-1", isAdmin: true, TaskStatus.InProgress);
+        await service.CompleteAsync(created.Id, "dev-1", isAdmin: true);
+
+        // Assert
+        Assert.True(tasks.ContainsKey(created.Id));
+        var stored = tasks[created.Id];
+        Assert.Equal("dev-1", stored.AssignedToUserId);
+        Assert.Equal(TaskStatus.Completed, stored.Status);
+        Assert.NotNull(stored.CompletedAt);
+    }
+
     private static TaskService CreateService(Dictionary<Guid, TaskItem>? tasks = null, Dictionary<Guid, Project>? projects = null, Dictionary<Guid, Sprint>? sprints = null, Dictionary<string, ApplicationUser>? users = null)
         => new(
             new FakeTaskRepository(tasks ?? new()),

@@ -42,10 +42,19 @@ export class BacklogComponent implements OnInit {
     };
   });
 
-  readonly planningReadyItems = computed(() => this.backlogItems().filter((item) => this.isPlanningReady(item)));
+  readonly planningReadyItems = computed(() => this.backlogItems()
+    .filter((item) => this.isPlanningReady(item))
+    .sort((first, second) => this.compareByDeadline(first, second))
+);
   readonly needsAttentionItems = computed(() => this.backlogItems().filter((item) => this.isNeedsAttention(item)));
   readonly otherBacklogItems = computed(() => this.backlogItems().filter((item) => !this.isPlanningReady(item) && !this.isNeedsAttention(item)));
 
+  private compareByDeadline(first: TaskAdminSummary, second: TaskAdminSummary): number {
+  const firstDeadline = first.deadline ? new Date(first.deadline).getTime() : Number.MAX_SAFE_INTEGER;
+  const secondDeadline = second.deadline ? new Date(second.deadline).getTime() : Number.MAX_SAFE_INTEGER;
+
+  return firstDeadline - secondDeadline;
+}
   ngOnInit(): void {
     this.loadItems();
   }

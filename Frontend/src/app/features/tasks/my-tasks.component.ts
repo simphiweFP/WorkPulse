@@ -24,7 +24,7 @@ export class MyTasksComponent implements OnInit {
   readonly loading = signal(true);
   readonly error = signal('');
   readonly tasks = signal<TaskRecommendation[]>([]);
-  readonly activeTab = signal<'current-sprint' | 'upcoming' | 'completed'>('current-sprint');
+  readonly activeTab = signal< 'upcoming' | 'completed'>('upcoming');
 
   readonly currentSprintTasks = computed(() => this.tasks().filter((task) => this.isCurrentSprint(task) && task.status !== 'Completed'));
   readonly upcomingTasks = computed(() => this.tasks().filter((task) => this.isUpcoming(task)));
@@ -42,10 +42,8 @@ export class MyTasksComponent implements OnInit {
 
   readonly currentUserName = computed(() => this.authService.getFullName(this.authService.getCurrentUserSnapshot()) || 'Admin User');
 
-  tabLabel(tab: 'current-sprint' | 'upcoming' | 'completed'): string {
+  tabLabel(tab: 'upcoming' | 'completed'): string {
     switch (tab) {
-      case 'current-sprint':
-        return 'Current Sprint';
       case 'upcoming':
         return 'Upcoming';
       case 'completed':
@@ -53,7 +51,7 @@ export class MyTasksComponent implements OnInit {
     }
   }
 
-  setActiveTab(tab: 'current-sprint' | 'upcoming' | 'completed'): void {
+  setActiveTab(tab: 'upcoming' | 'completed'): void {
     this.activeTab.set(tab);
     const element = document.getElementById(tab);
     element?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -112,7 +110,7 @@ export class MyTasksComponent implements OnInit {
     return this.blockedTasks().length > 0;
   }
 
-  visibleSection(): 'current-sprint' | 'upcoming' | 'completed' {
+  visibleSection(): 'upcoming' | 'completed' {
     return this.activeTab();
   }
 

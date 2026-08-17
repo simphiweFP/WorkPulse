@@ -91,8 +91,10 @@
           <div>
             <p class="eyebrow">Tasks</p>
             <h2>{{ selectedTaskId() ? 'Edit Task' : 'Create / Assign Task' }}</h2>
-            <p class="task-form-modal__subtitle">Follow Client → Project → Sprint → Task to keep work linked correctly.</p>
-          </div>
+            <p class="task-form-modal__subtitle">
+            Follow Client → Project → Task → Backlog → Sprint → Assignment to keep work linked correctly.
+            </p> 
+         </div>
           <button type="button" class="secondary" (click)="closeTaskForm()">Close</button>
         </div>
 
@@ -117,7 +119,7 @@
           <label>
             <span>Client *</span>
             <select formControlName="clientId" (change)="onClientChange()">
-              <option value="">Select...</option>
+              <option value="">Select client</option>
               @for (client of clients(); track client.id) {
                 <option [value]="client.id">{{ client.name }}</option>
               }
@@ -125,12 +127,18 @@
             @if (form.controls.clientId.touched && form.controls.clientId.invalid) {
               <small class="field-error">Client is required.</small>
             }
+          </label> <label>
+            <span>Deadline *</span>
+            <input type="date" formControlName="deadline" />
+            @if (form.controls.deadline.touched && form.controls.deadline.invalid) {
+              <small class="field-error">Deadline is required.</small>
+            }
           </label>
           <div class="full-width field-note">Select a client first, then choose a project.</div>
           <label>
             <span>Project *</span>
             <select formControlName="projectId" (change)="onProjectChange()">
-              <option value="">Select...</option>
+              <option value="">Select project</option>
               @for (project of availableProjects(); track project.id) {
                 <option [value]="project.id">{{ project.name }}</option>
               }
@@ -142,6 +150,7 @@
           <label>
             <span>Priority *</span>
             <select formControlName="priority">
+              <option value="">Select priority</option>
               <option value="Low">Low</option>
               <option value="Medium">Medium</option>
               <option value="High">High</option>
@@ -154,6 +163,7 @@
           <label>
             <span>Type *</span>
             <select formControlName="type">
+              <option value="">Select task type</option>
               <option value="Story">Story</option>
               <option value="Bug">Bug</option>
               <option value="Improvement">Improvement</option>
@@ -165,6 +175,7 @@
           <label>
             <span>Status *</span>
             <select formControlName="status">
+              <option value="">Select status</option>
               <option value="Todo">Todo</option>
               <option value="InProgress">In Progress</option>
               <option value="Completed">Completed</option>
@@ -183,20 +194,13 @@
           <label>
             <span>Assignee *</span>
             <select formControlName="assigneeId">
-              <option value="">Select...</option>
+              <option value="">Select assignee</option>
               @for (assignee of assignees(); track assignee.id) {
                 <option [value]="assignee.id">{{ assignee.firstName }} {{ assignee.lastName }}</option>
               }
             </select>
             @if (form.controls.assigneeId.touched && form.controls.assigneeId.invalid) {
               <small class="field-error">Assignee is required.</small>
-            }
-          </label>
-          <label>
-            <span>Deadline *</span>
-            <input type="date" formControlName="deadline" />
-            @if (form.controls.deadline.touched && form.controls.deadline.invalid) {
-              <small class="field-error">Deadline is required.</small>
             }
           </label>
           <div class="actions full-width">

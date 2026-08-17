@@ -13,27 +13,9 @@
   } @else if (error()) {
     <app-error-state title="Tasks unavailable" [message]="error()" actionLabel="Try Again" [retry]="loadTasks.bind(this)" />
   } @else {
-    <section class="summary-strip">
-      <article class="summary-chip">
-        <span>Current Sprint</span>
-        <strong>{{ summary().currentSprintCount }} tasks</strong>
-      </article>
-      <article class="summary-chip">
-        <span>Story Points</span>
-        <strong>{{ summary().storyPoints }} SP</strong>
-      </article>
-      <article class="summary-chip">
-        <span>In Progress</span>
-        <strong>{{ summary().inProgress }}</strong>
-      </article>
-      <article class="summary-chip">
-        <span>Blocked</span>
-        <strong>{{ summary().blocked }}</strong>
-      </article>
-    </section>
+  
 
     <section class="tabs tabs--density-ready">
-      <button type="button" [class.is-active]="activeTab() === 'current-sprint'" (click)="setActiveTab('current-sprint')">Current Sprint</button>
       <button type="button" [class.is-active]="activeTab() === 'upcoming'" (click)="setActiveTab('upcoming')">Upcoming</button>
       <button type="button" [class.is-active]="activeTab() === 'completed'" (click)="setActiveTab('completed')">Completed</button>
     </section>

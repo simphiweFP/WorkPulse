@@ -18,6 +18,11 @@ public sealed class UsersController : ControllerBase
         _userRepository = userRepository;
     }
 
+    [HttpGet("developers")]
+    [Authorize(Roles = Roles.Admin)]
+    public async Task<IActionResult> GetDevelopers(CancellationToken cancellationToken)
+        => Ok(await _userRepository.GetDevelopersAsync(cancellationToken));
+
     [HttpGet]
     [Authorize(Roles = Roles.Admin)]
     public async Task<IActionResult> GetUsers(CancellationToken cancellationToken)

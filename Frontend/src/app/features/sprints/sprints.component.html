@@ -27,7 +27,7 @@
               <th>Project</th>
               <th>Dates</th>
               <th>Status</th>
-              <th>Progress</th>
+              <!-- <th>Progress</th> -->
               <th>Actions</th>
             </tr>
           </thead>
@@ -37,15 +37,15 @@
                 <td class="table-title">{{ sprint.name }}</td>
                 <td>{{ projectName(sprint.projectId) }}</td>
                 <td>{{ sprint.startDate | date:'mediumDate' }} - {{ sprint.endDate | date:'mediumDate' }}</td>
-                <td><span class="badge badge--info">{{ sprint.status }}</span></td>
-                <td>
+                <td><span class="badge badge--info">{{ sprintDisplayStatus(sprint) }}</span></td>
+                <!-- <td>
                   <div class="progress-cell">
                     <div class="progress-cell__text">{{ sprintProgressLabelView(sprint) }}</div>
                     <div class="progress-cell__bar">
                       <div class="progress-cell__fill" [style.width.%]="sprintProgressPercentView(sprint)"></div>
                     </div>
                   </div>
-                </td>
+                </td> -->
                 <td class="row-actions">
                   <button type="button" class="secondary" (click)="openSprintTaskDrawer(sprint)">{{ canManageSprintsView() ? 'Tasks' : 'View details' }}</button>
                   @if (canManageSprintsView()) {
@@ -80,7 +80,7 @@
           <label class="full-width">
             <span>Project *</span>
             <select formControlName="projectId">
-              <option value="">Select...</option>
+              <option value="">Select project</option>
               @for (project of availableProjects(); track project.id) {
                 <option [value]="project.id">{{ project.name }}</option>
               }
@@ -123,6 +123,7 @@
           <label>
             <span>Status *</span>
             <select formControlName="status">
+              <option value="">Select status</option>
               <option value="Planned">Planned</option>
               <option value="Active">Active</option>
               <option value="Completed">Completed</option>

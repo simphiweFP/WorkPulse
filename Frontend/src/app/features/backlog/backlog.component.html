@@ -27,19 +27,12 @@
       </div>
     </section>
 
-    <section class="backlog-filters" [formGroup]="filters">
-      <input placeholder="Search backlog..." formControlName="search" />
-      <input placeholder="Project ▼" formControlName="projectId" />
-      <input placeholder="Priority ▼" formControlName="priority" />
-      <div class="actions">
-        <button type="button" class="secondary" (click)="resetFilters()">Reset</button>
-      </div>
-    </section>
+
 
     <section class="backlog-group">
       <div class="backlog-group__heading">
         <h2>Next Sprint Candidates</h2>
-        <p>Backlog work currently prepared for sprint planning.</p>
+        <p>Backlog work prepared for sprint planning, ordered by the nearest deadline.</p>
       </div>
 
       @if (planningReadyItems().length) {
@@ -66,12 +59,12 @@
     </section>
 
     <section class="backlog-group">
-      <div class="backlog-group__heading">
+      <!-- <div class="backlog-group__heading">
         <h2>Needs Attention Before Planning</h2>
         <p>Backlog work that needs refinement before sprint planning.</p>
-      </div>
+      </div> -->
 
-      @if (needsAttentionItems().length) {
+      <!-- @if (needsAttentionItems().length) { -->
         <div class="backlog-rows backlog-rows--attention">
           @for (item of needsAttentionItems(); track item.id) {
             <article class="backlog-row panel">
@@ -89,12 +82,12 @@
             </article>
           }
         </div>
-      } @else {
+      <!-- } @else {
         <app-empty-state title="Nothing needs attention right now." message="All visible backlog items have enough information for planning." />
-      }
+      } -->
     </section>
 
-    <section class="backlog-group">
+    <!-- <section class="backlog-group">
       <div class="backlog-group__heading">
         <h2>Other Backlog Work</h2>
         <p>Remaining backlog work.</p>
@@ -121,6 +114,6 @@
       } @else {
         <app-empty-state title="No additional backlog work." message="Everything currently visible is either planning-ready or needs attention." />
       }
-    </section>
+    </section> -->
   }
 </section>
