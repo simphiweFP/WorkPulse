@@ -1,3 +1,5 @@
+using System;
+
 namespace WorkPulse.Web.API.Contracts.Responses;
 
 public class UserResponse
@@ -7,4 +9,6 @@ public class UserResponse
     public string LastName { get; set; } = string.Empty;
     public string Email { get; set; } = string.Empty;
     public string Role { get; set; } = string.Empty;
+    public DateTime CreatedAt { get; set; }
+    public bool IsPending => string.Equals(Role, "Pending", StringComparison.OrdinalIgnoreCase);
 }

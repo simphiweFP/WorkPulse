@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
+using WorkPulse.Application.DTOs.Today;
 using WorkPulse.Application.DTOs.Tasks;
 using WorkPulse.Application.Interfaces;
 using TaskStatus = WorkPulse.Domain.Enums.TaskStatus;
@@ -65,22 +66,48 @@ public sealed class TasksController : ControllerBase
                 DeadlineToday = dashboard.Summary.DeadlineToday,
                 HighPriority = dashboard.Summary.HighPriority
             },
-            Tasks = dashboard.Tasks.Select(task => new TodayTaskResponse
-            {
-                Id = task.Id,
-                ProjectId = task.ProjectId,
-                ProjectName = task.ProjectName,
-                ClientId = task.ClientId,
-                ClientName = task.ClientName,
-                Title = task.Title,
-                Description = task.Description,
-                Deadline = task.Deadline,
-                Status = task.Status,
-                Priority = task.Priority,
-                RecommendationReason = task.RecommendationReason,
-                Score = task.Score
-            }).ToArray()
+            TopPriority = Map(dashboard.TopPriority),
+            Overdue = dashboard.Overdue.Select(Map).ToArray(),
+            DueToday = dashboard.DueToday.Select(Map).ToArray(),
+            RecommendedNext = dashboard.RecommendedNext.Select(Map).ToArray(),
+            CompletedToday = dashboard.CompletedToday.Select(Map).ToArray(),
+            SprintWorkComplete = dashboard.SprintWorkComplete,
+            SprintName = dashboard.SprintName,
+            SprintCompletedTasks = dashboard.SprintCompletedTasks,
+            SprintTotalTasks = dashboard.SprintTotalTasks
         });
+    }
+
+    private static TodayTaskResponse Map(TodayTaskDto task) => new()
+    {
+        Id = task.Id,
+        ProjectId = task.ProjectId,
+        ProjectName = task.ProjectName,
+        ClientId = task.ClientId,
+        ClientName = task.ClientName,
+        Type = task.Type,
+        Title = task.Title,
+        Description = task.Description,
+        SprintOrder = task.SprintOrder,
+        Deadline = task.Deadline,
+        Status = task.Status,
+        Priority = task.Priority,
+        RecommendationReason = task.RecommendationReason,
+        Score = task.Score
+    };
+
+    [HttpGet("backlog")]
+    public async Task<ActionResult<IReadOnlyCollection<TaskResponse>>> GetBacklog(CancellationToken cancellationToken)
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrWhiteSpace(userId))
+        {
+            return Unauthorized();
+        }
+
+        var isAdmin = User.IsInRole("Admin");
+        var items = await _taskService.GetBacklogAsync(userId, isAdmin, cancellationToken);
+        return Ok(items.Select(Map).ToArray());
     }
 
     [HttpPost]
@@ -89,11 +116,15 @@ public sealed class TasksController : ControllerBase
     {
         var created = await _taskService.CreateAsync(new CreateTaskRequestDto
         {
+            ClientId = request.ClientId,
             ProjectId = request.ProjectId,
             SprintId = request.SprintId,
             AssignedToUserId = request.AssignedToUserId,
+            Type = request.Type,
             Title = request.Title,
             Description = request.Description,
+            StoryPoints = request.StoryPoints,
+            SprintOrder = request.SprintOrder,
             Deadline = request.Deadline,
             Status = request.Status,
             Priority = request.Priority
@@ -104,21 +135,25 @@ public sealed class TasksController : ControllerBase
 
     [HttpPut("{id:guid}")]
     [Authorize(Roles = "Admin")]
-    public async Task<IActionResult> Update(Guid id, [FromBody] UpdateTaskRequest request, CancellationToken cancellationToken)
+    public async Task<ActionResult<TaskResponse>> Update(Guid id, [FromBody] UpdateTaskRequest request, CancellationToken cancellationToken)
     {
         await _taskService.UpdateAsync(id, new UpdateTaskRequestDto
         {
+            ClientId = request.ClientId,
             ProjectId = request.ProjectId,
             SprintId = request.SprintId,
             AssignedToUserId = request.AssignedToUserId,
+            Type = request.Type,
             Title = request.Title,
             Description = request.Description,
+            StoryPoints = request.StoryPoints,
+            SprintOrder = request.SprintOrder,
             Deadline = request.Deadline,
             Status = request.Status,
             Priority = request.Priority
         }, cancellationToken);
 
-        return NoContent();
+        return Ok(Map(await _taskService.GetByIdAsync(id, cancellationToken)));
     }
 
     [HttpDelete("{id:guid}")]
@@ -170,6 +205,7 @@ public sealed class TasksController : ControllerBase
         Id = task.Id,
         ProjectId = task.ProjectId,
         SprintId = task.SprintId,
+        Type = task.Type,
         SprintName = task.SprintName,
         ProjectName = task.ProjectName,
         ClientId = task.ClientId,
@@ -178,6 +214,8 @@ public sealed class TasksController : ControllerBase
         AssignedUserName = task.AssignedUserName,
         Title = task.Title,
         Description = task.Description,
+        StoryPoints = task.StoryPoints,
+        SprintOrder = task.SprintOrder,
         Deadline = task.Deadline,
         Status = task.Status,
         Priority = task.Priority,

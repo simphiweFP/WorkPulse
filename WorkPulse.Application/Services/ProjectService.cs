@@ -21,19 +21,19 @@ public sealed class ProjectService : IProjectService
     public async Task<IReadOnlyCollection<ProjectDto>> GetAllAsync(CancellationToken cancellationToken = default)
     {
         var projects = await _projectRepository.GetAllAsync(cancellationToken);
-        return projects.Select(project => Map(project)).ToArray();
+        return projects.Select(project => Map(project, project.ClientName)).ToArray();
     }
 
     public async Task<ProjectDto> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
         var project = await _projectRepository.GetByIdAsync(id, cancellationToken);
-        return project is null ? throw new NotFoundException($"Project '{id}' was not found.") : Map(project);
+        return project is null ? throw new NotFoundException($"Project '{id}' was not found.") : Map(project, project.ClientName);
     }
 
     public async Task<IReadOnlyCollection<ProjectDto>> GetByClientIdAsync(Guid clientId, CancellationToken cancellationToken = default)
     {
         var projects = await _projectRepository.GetByClientIdAsync(clientId, cancellationToken);
-        return projects.Select(project => Map(project)).ToArray();
+        return projects.Select(project => Map(project, project.ClientName)).ToArray();
     }
 
     public async Task<ProjectDto> CreateAsync(CreateProjectRequestDto request, CancellationToken cancellationToken = default)
@@ -53,6 +53,8 @@ public sealed class ProjectService : IProjectService
             ClientId = request.ClientId,
             Name = request.Name.Trim(),
             Description = request.Description.Trim(),
+            TotalTasks = request.TotalTasks,
+            StartDate = request.StartDate,
             Status = request.Status,
             CreatedAt = now,
             UpdatedAt = now
@@ -84,6 +86,8 @@ public sealed class ProjectService : IProjectService
             ClientId = request.ClientId,
             Name = request.Name.Trim(),
             Description = request.Description.Trim(),
+            TotalTasks = request.TotalTasks,
+            StartDate = request.StartDate,
             Status = request.Status,
             CreatedAt = existing.CreatedAt,
             UpdatedAt = _clock.UtcNow,
@@ -110,6 +114,8 @@ public sealed class ProjectService : IProjectService
         ClientName = clientName,
         Name = project.Name,
         Description = project.Description,
+        TotalTasks = project.TotalTasks,
+        StartDate = project.StartDate,
         Status = project.Status,
         CreatedAt = project.CreatedAt,
         UpdatedAt = project.UpdatedAt,

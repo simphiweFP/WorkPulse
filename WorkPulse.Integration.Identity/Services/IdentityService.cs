@@ -48,7 +48,7 @@ public class IdentityService : IIdentityService
             EmailConfirmed = true
         };
 
-        var roles = new[] { WorkPulseRoles.Developer };
+        var roles = Array.Empty<string>();
         await _userRepository.CreateAsync(user, _passwordHasher.Hash(request.Password), roles, cancellationToken);
 
         var authUser = await BuildUserAsync(user, roles, cancellationToken);
@@ -99,9 +99,14 @@ public class IdentityService : IIdentityService
         return Result<AuthUser>.Success(await BuildUserAsync(user, roles, cancellationToken));
     }
 
+    public static string NormalizeRoleOrPending(string? role)
+        => string.IsNullOrWhiteSpace(role) ? WorkPulseRoles.Pending : role.Trim();
+
     private static Task<AuthUser> BuildUserAsync(DomainUser user, IReadOnlyCollection<string> roles, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
+
+        var role = roles.FirstOrDefault();
 
         return Task.FromResult(new AuthUser
         {
@@ -109,7 +114,7 @@ public class IdentityService : IIdentityService
             FirstName = user.FirstName,
             LastName = user.LastName,
             Email = user.Email ?? string.Empty,
-            Role = roles.FirstOrDefault() ?? string.Empty
+            Role = NormalizeRoleOrPending(role)
         });
     }
 }

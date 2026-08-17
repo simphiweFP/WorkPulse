@@ -14,5 +14,11 @@ public sealed class UpdateProjectRequestDto
     public string Description { get; init; } = string.Empty;
 
     [Required]
+    public int TotalTasks { get; init; }
+
+    [Required]
+    public DateTime StartDate { get; init; }
+
+    [Required]
     public ProjectStatus Status { get; init; }
 }

@@ -1,3 +1,5 @@
+using WorkPulse.Integration.Identity.Roles;
+
 namespace WorkPulse.Integration.Identity.Models;
 
 public class AuthUser
@@ -7,4 +9,5 @@ public class AuthUser
     public string LastName { get; set; } = string.Empty;
     public string Email { get; set; } = string.Empty;
     public string Role { get; set; } = string.Empty;
+    public bool IsPending => string.Equals(Role, WorkPulseRoles.Pending, StringComparison.OrdinalIgnoreCase);
 }

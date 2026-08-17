@@ -49,6 +49,8 @@ public sealed class ProjectsController : ControllerBase
             ClientId = request.ClientId,
             Name = request.Name,
             Description = request.Description,
+            TotalTasks = request.TotalTasks,
+            StartDate = request.StartDate,
             Status = request.Status
         }, cancellationToken);
 
@@ -64,6 +66,8 @@ public sealed class ProjectsController : ControllerBase
             ClientId = request.ClientId,
             Name = request.Name,
             Description = request.Description,
+            TotalTasks = request.TotalTasks,
+            StartDate = request.StartDate,
             Status = request.Status
         }, cancellationToken);
 
@@ -85,6 +89,8 @@ public sealed class ProjectsController : ControllerBase
         ClientName = project.ClientName,
         Name = project.Name,
         Description = project.Description,
+        TotalTasks = project.TotalTasks,
+        StartDate = project.StartDate,
         Status = project.Status,
         CreatedAt = project.CreatedAt,
         UpdatedAt = project.UpdatedAt,

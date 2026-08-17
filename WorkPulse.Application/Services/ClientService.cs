@@ -32,13 +32,19 @@ public sealed class ClientService : IClientService
     {
         Validate(request.Name, request.ContactEmail);
 
+        var normalizedEmail = request.ContactEmail.Trim();
+        if (await _clientRepository.ExistsByEmailAsync(normalizedEmail, cancellationToken))
+        {
+            throw new WorkPulse.Application.Common.Exceptions.ValidationException("A client with this email already exists.");
+        }
+
         var now = _clock.UtcNow;
         var client = new Client
         {
             Id = Guid.NewGuid(),
             Name = request.Name.Trim(),
             ContactName = request.ContactName.Trim(),
-            ContactEmail = request.ContactEmail.Trim(),
+            ContactEmail = normalizedEmail,
             PhoneNumber = request.PhoneNumber.Trim(),
             Description = request.Description.Trim(),
             CreatedAt = now,
@@ -60,13 +66,20 @@ public sealed class ClientService : IClientService
             throw new NotFoundException($"Client '{id}' was not found.");
         }
 
+        var normalizedEmail = request.ContactEmail.Trim();
+        if (!string.Equals(normalizedEmail, existing.ContactEmail, StringComparison.OrdinalIgnoreCase)
+            && await _clientRepository.ExistsByEmailAsync(normalizedEmail, cancellationToken))
+        {
+            throw new WorkPulse.Application.Common.Exceptions.ValidationException("A client with this email already exists.");
+        }
+
         var now = _clock.UtcNow;
         await _clientRepository.UpdateAsync(new Client
         {
             Id = id,
             Name = request.Name.Trim(),
             ContactName = request.ContactName.Trim(),
-            ContactEmail = request.ContactEmail.Trim(),
+            ContactEmail = normalizedEmail,
             PhoneNumber = request.PhoneNumber.Trim(),
             Description = request.Description.Trim(),
             CreatedAt = existing.CreatedAt,

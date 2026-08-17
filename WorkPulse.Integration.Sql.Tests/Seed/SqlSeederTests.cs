@@ -58,8 +58,8 @@ public class SqlSeederTests
             await seeder.SeedAsync(logger);
             var secondCounts = await GetCountsAsync(databaseName);
 
-            Assert.Equal(5, firstCounts.Users);
-            Assert.Equal(2, firstCounts.Roles);
+            Assert.Equal(6, firstCounts.Users);
+            Assert.Equal(3, firstCounts.Roles);
             Assert.Equal(5, firstCounts.Clients);
             Assert.Equal(9, firstCounts.Projects);
             Assert.Equal(24, firstCounts.Tasks);

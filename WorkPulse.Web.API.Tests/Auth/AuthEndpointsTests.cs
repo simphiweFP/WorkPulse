@@ -8,7 +8,7 @@ namespace WorkPulse.Web.API.Tests.Auth;
 public class AuthEndpointsTests
 {
     [Fact]
-    public async Task Register_ShouldCreateDeveloperUser()
+    public async Task Register_ShouldCreatePendingUser()
     {
         await using var factory = new TestWebApplicationFactory();
         using var client = factory.CreateClient();
@@ -27,7 +27,7 @@ public class AuthEndpointsTests
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         var auth = await response.Content.ReadFromJsonAsync<AuthResponse>();
         Assert.NotNull(auth);
-        Assert.Equal("Developer", auth!.User.Role);
+        Assert.Equal("Pending", auth!.User.Role);
         Assert.False(string.IsNullOrWhiteSpace(auth.Token));
     }
 
@@ -117,7 +117,7 @@ public class AuthEndpointsTests
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         var auth = await response.Content.ReadFromJsonAsync<AuthResponse>();
         Assert.NotNull(auth);
-        Assert.Equal("Developer", auth!.User.Role);
+        Assert.Equal("Pending", auth!.User.Role);
     }
 
     [Fact]
@@ -144,7 +144,7 @@ public class AuthEndpointsTests
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         var auth = await response.Content.ReadFromJsonAsync<AuthResponse>();
         Assert.NotNull(auth);
-        Assert.Equal("Developer", auth!.User.Role);
+        Assert.Equal("Pending", auth!.User.Role);
         Assert.False(string.IsNullOrWhiteSpace(auth.Token));
     }
 

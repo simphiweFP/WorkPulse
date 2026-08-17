@@ -36,7 +36,13 @@ public sealed class TodayController : ControllerBase
     [Authorize(Roles = "Admin")]
     public async Task<ActionResult<TodayDashboardResponse>> GetAdminToday(CancellationToken cancellationToken)
     {
-        var dashboard = await _todayService.GetAdminTodayAsync(cancellationToken);
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrWhiteSpace(userId))
+        {
+            return Unauthorized();
+        }
+
+        var dashboard = await _todayService.GetAdminTodayAsync(userId, cancellationToken);
         return Ok(Map(dashboard));
     }
 
@@ -49,20 +55,34 @@ public sealed class TodayController : ControllerBase
             DeadlineToday = dashboard.Summary.DeadlineToday,
             HighPriority = dashboard.Summary.HighPriority
         },
-        Tasks = dashboard.Tasks.Select(task => new TodayTaskResponse
-        {
-            Id = task.Id,
-            ProjectId = task.ProjectId,
-            ProjectName = task.ProjectName,
-            ClientId = task.ClientId,
-            ClientName = task.ClientName,
-            Title = task.Title,
-            Description = task.Description,
-            Deadline = task.Deadline,
-            Status = task.Status,
-            Priority = task.Priority,
-            RecommendationReason = task.RecommendationReason,
-            Score = task.Score
-        }).ToArray()
+        TopPriority = MapTask(dashboard.TopPriority),
+        Overdue = dashboard.Overdue.Select(MapTask).ToArray(),
+        DueToday = dashboard.DueToday.Select(MapTask).ToArray(),
+        RecommendedNext = dashboard.RecommendedNext.Select(MapTask).ToArray(),
+        CompletedToday = dashboard.CompletedToday.Select(MapTask).ToArray(),
+        SprintWorkComplete = dashboard.SprintWorkComplete,
+        SprintName = dashboard.SprintName,
+        SprintCompletedTasks = dashboard.SprintCompletedTasks,
+        SprintTotalTasks = dashboard.SprintTotalTasks,
+        SprintCompletedPoints = dashboard.SprintCompletedPoints,
+        SprintTotalPoints = dashboard.SprintTotalPoints
+    };
+
+    private static TodayTaskResponse MapTask(TodayTaskDto task) => new()
+    {
+        Id = task.Id,
+        ProjectId = task.ProjectId,
+        ProjectName = task.ProjectName,
+        ClientId = task.ClientId,
+        ClientName = task.ClientName,
+        Type = task.Type,
+        Title = task.Title,
+        Description = task.Description,
+        SprintOrder = task.SprintOrder,
+        Deadline = task.Deadline,
+        Status = task.Status,
+        Priority = task.Priority,
+        RecommendationReason = task.RecommendationReason,
+        Score = task.Score
     };
 }

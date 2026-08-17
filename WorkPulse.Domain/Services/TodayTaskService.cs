@@ -5,158 +5,220 @@ namespace WorkPulse.Domain.Services;
 
 public sealed class TodayTaskService : ITodayTaskService
 {
-    private const int MaxUpcomingDaysToInclude = 3;
-    private const int OverdueScore = 100;
-    private const int DueTodayScore = 80;
-    private const int DueTomorrowScore = 50;
-    private const int DueInTwoDaysScore = 40;
-    private const int DueInThreeDaysScore = 30;
-
     private const int CriticalScore = 40;
     private const int HighScore = 30;
     private const int MediumScore = 20;
     private const int LowScore = 10;
 
+    public IReadOnlyCollection<TodayTaskCandidate> GetEligibleTasks(IEnumerable<TodayTaskCandidate> tasks, DateTime utcToday)
+        => GetActiveTasks(tasks).ToArray();
+
     public IReadOnlyCollection<TodayTaskCandidate> RankDeveloperTasks(IEnumerable<TodayTaskCandidate> tasks, DateTime utcToday)
-    {
-        var today = utcToday.Date;
-        return tasks
-            .Where(task => task.Status != TaskStatus.Completed)
-            .Where(task => ShouldInclude(task, today))
-            .Select(task => ApplyScoring(task, today))
-            .Where(task => task.Score > 0)
-            .OrderByDescending(task => task.Score)
-            .ThenBy(task => task.DueDate ?? DateTime.MaxValue)
-            .ThenByDescending(task => task.Priority)
-            .ThenBy(task => task.Title)
-            .ThenBy(task => task.Id)
-            .ToArray();
-    }
+        => BuildSections(tasks, utcToday).AllActiveOrdered;
 
     public TodaySummary BuildSummary(IEnumerable<TodayTaskCandidate> tasks, DateTime utcToday)
     {
         var today = utcToday.Date;
-        var list = tasks.Where(task => task.Status != TaskStatus.Completed).ToArray();
+        var activeTasks = GetActiveTasks(tasks).ToArray();
         return new TodaySummary
         {
-            Total = list.Length,
-            Overdue = list.Count(task => task.DueDate.HasValue && task.DueDate.Value.Date < today),
-            DueToday = list.Count(task => task.DueDate.HasValue && task.DueDate.Value.Date == today),
-            HighPriority = list.Count(task => task.Priority is TaskPriority.High or TaskPriority.Critical)
+            Total = activeTasks.Length,
+            Overdue = activeTasks.Count(task => IsOverdue(task, today)),
+            DueToday = activeTasks.Count(task => IsDueToday(task, today)),
+            HighPriority = activeTasks.Count(task => task.Priority is TaskPriority.High or TaskPriority.Critical)
+        };
+    }
+
+    public TodayTaskSections BuildSections(IEnumerable<TodayTaskCandidate> tasks, DateTime utcToday)
+    {
+        var today = utcToday.Date;
+        var activeTasks = GetActiveTasks(tasks).ToArray();
+        var completedTasks = tasks
+            .Where(task => task.Status == TaskStatus.Completed)
+            .Select(task => task with { RecommendationReason = "Recently completed", Score = 0 })
+            .OrderByDescending(task => task.SprintOrder ?? int.MinValue)
+            .ThenBy(task => task.Title)
+            .ThenBy(task => task.Id)
+            .ToArray();
+
+        var topPriority = SelectTopPriority(activeTasks, today);
+        var remainingActive = topPriority is null
+            ? activeTasks
+            : activeTasks.Where(task => task.Id != topPriority.Id).ToArray();
+
+        var overdue = remainingActive
+            .Where(task => IsOverdue(task, today))
+            .Select(task => ApplyReason(task, today))
+            .OrderByDescending(task => task.Priority)
+            .ThenBy(task => task.DueDate ?? DateTime.MinValue)
+            .ThenBy(task => task.Title)
+            .ThenBy(task => task.Id)
+            .ToArray();
+
+        var dueToday = remainingActive
+            .Where(task => IsDueToday(task, today))
+            .Select(task => ApplyReason(task, today))
+            .OrderByDescending(task => task.Status == TaskStatus.InProgress)
+            .ThenByDescending(task => task.Priority)
+            .ThenBy(task => task.Title)
+            .ThenBy(task => task.Id)
+            .ToArray();
+
+        var hasAnyDatedActiveTask = activeTasks.Any(task => task.DueDate.HasValue);
+        var recommendedNextSource = hasAnyDatedActiveTask
+            ? remainingActive.Where(task => IsUpcoming(task, today))
+            : remainingActive.Where(task => !task.DueDate.HasValue);
+
+        var recommendedNext = recommendedNextSource
+            .Select(task => ApplyReason(task, today))
+            .OrderBy(task => task.DueDate ?? DateTime.MaxValue)
+            .ThenByDescending(task => task.Status == TaskStatus.InProgress)
+            .ThenByDescending(task => task.Priority)
+            .ThenBy(task => task.Title)
+            .ThenBy(task => task.Id)
+            .ToArray();
+
+        var topPriorityWithReason = topPriority is null ? null : ApplyReason(topPriority, today);
+
+        var allActiveOrdered = topPriorityWithReason is null
+            ? overdue.Concat(dueToday).Concat(recommendedNext).ToArray()
+            : new[] { topPriorityWithReason }.Concat(overdue).Concat(dueToday).Concat(recommendedNext).ToArray();
+
+        return new TodayTaskSections
+        {
+            TopPriority = topPriorityWithReason,
+            Overdue = overdue,
+            DueToday = dueToday,
+            RecommendedNext = recommendedNext,
+            CompletedToday = completedTasks,
+            AllActiveOrdered = allActiveOrdered
         };
     }
 
     public IReadOnlyCollection<TodayTaskCandidate> GetAdminSnapshot(IEnumerable<TodayTaskCandidate> tasks, DateTime utcToday)
         => RankDeveloperTasks(tasks, utcToday);
 
-    private static bool ShouldInclude(TodayTaskCandidate task, DateTime today)
+    private static IEnumerable<TodayTaskCandidate> GetActiveTasks(IEnumerable<TodayTaskCandidate> tasks)
+        => tasks.Where(IsActive);
+
+    private static bool IsActive(TodayTaskCandidate task)
+        => task.Status is TaskStatus.Todo or TaskStatus.InProgress;
+
+    private static bool IsOverdue(TodayTaskCandidate task, DateTime today)
+        => task.DueDate.HasValue && task.DueDate.Value.Date < today;
+
+    private static bool IsDueToday(TodayTaskCandidate task, DateTime today)
+        => task.DueDate.HasValue && task.DueDate.Value.Date == today;
+
+    private static bool IsUpcoming(TodayTaskCandidate task, DateTime today)
+        => task.DueDate.HasValue && task.DueDate.Value.Date > today;
+
+    private static TodayTaskCandidate? SelectTopPriority(IEnumerable<TodayTaskCandidate> tasks, DateTime today)
+    {
+        var inProgressOverdue = tasks.Where(task => task.Status == TaskStatus.InProgress && IsOverdue(task, today))
+            .OrderByDescending(task => task.Priority)
+            .ThenBy(task => task.DueDate ?? DateTime.MinValue)
+            .ThenBy(task => task.Title)
+            .ThenBy(task => task.Id)
+            .FirstOrDefault();
+        if (inProgressOverdue is not null)
+        {
+            return inProgressOverdue;
+        }
+
+        var overdue = tasks.Where(task => IsOverdue(task, today))
+            .OrderByDescending(task => task.Priority)
+            .ThenBy(task => task.DueDate ?? DateTime.MinValue)
+            .ThenBy(task => task.Title)
+            .ThenBy(task => task.Id)
+            .FirstOrDefault();
+        if (overdue is not null)
+        {
+            return overdue;
+        }
+
+        var inProgressDueToday = tasks.Where(task => task.Status == TaskStatus.InProgress && IsDueToday(task, today))
+            .OrderBy(task => task.Title)
+            .ThenBy(task => task.Id)
+            .FirstOrDefault();
+        if (inProgressDueToday is not null)
+        {
+            return inProgressDueToday;
+        }
+
+        var dueToday = tasks.Where(task => IsDueToday(task, today))
+            .OrderByDescending(task => task.Status == TaskStatus.InProgress)
+            .ThenByDescending(task => task.Priority)
+            .ThenBy(task => task.Title)
+            .ThenBy(task => task.Id)
+            .FirstOrDefault();
+        if (dueToday is not null)
+        {
+            return dueToday;
+        }
+
+        var inProgressUpcoming = tasks.Where(task => task.Status == TaskStatus.InProgress && IsUpcoming(task, today))
+            .OrderBy(task => task.DueDate ?? DateTime.MaxValue)
+            .ThenBy(task => task.Title)
+            .ThenBy(task => task.Id)
+            .FirstOrDefault();
+        if (inProgressUpcoming is not null)
+        {
+            return inProgressUpcoming;
+        }
+
+        var upcoming = tasks.Where(task => IsUpcoming(task, today))
+            .OrderBy(task => task.DueDate ?? DateTime.MaxValue)
+            .ThenByDescending(task => task.Priority)
+            .ThenBy(task => task.Title)
+            .ThenBy(task => task.Id)
+            .FirstOrDefault();
+        if (upcoming is not null)
+        {
+            return upcoming;
+        }
+
+        return tasks.Where(task => !task.DueDate.HasValue)
+            .OrderByDescending(task => task.Status == TaskStatus.InProgress)
+            .ThenByDescending(task => task.Priority)
+            .ThenBy(task => task.Title)
+            .ThenBy(task => task.Id)
+            .FirstOrDefault();
+    }
+
+    private static TodayTaskCandidate ApplyReason(TodayTaskCandidate task, DateTime today)
+    {
+        var reason = BuildReason(task, today);
+        var score = Score(task);
+        return task with { RecommendationReason = reason, Score = score };
+    }
+
+    private static string BuildReason(TodayTaskCandidate task, DateTime today)
     {
         if (!task.DueDate.HasValue)
         {
-            return task.Priority is TaskPriority.High or TaskPriority.Critical;
+            return task.Status == TaskStatus.InProgress ? "In progress · no deadline set" : "No deadline set";
         }
 
         var due = task.DueDate.Value.Date;
         var days = (due - today).Days;
-
-        if (days <= MaxUpcomingDaysToInclude)
+        var baseReason = days switch
         {
-            return true;
-        }
+            < 0 => $"Overdue by {Math.Abs(days)} day{(Math.Abs(days) == 1 ? string.Empty : "s")}",
+            0 => "Due today",
+            1 => "Due tomorrow",
+            _ => $"Due in {days} days"
+        };
 
-        return task.Priority is TaskPriority.High or TaskPriority.Critical;
+        return task.Status == TaskStatus.InProgress ? $"In progress · {baseReason.ToLowerInvariant()}" : baseReason;
     }
 
-    private static TodayTaskCandidate ApplyScoring(TodayTaskCandidate task, DateTime today)
-    {
-        var score = 0;
-        var reason = string.Empty;
-
-        if (!task.DueDate.HasValue)
-        {
-            score += PriorityScore(task.Priority);
-            reason = task.Priority switch
-            {
-                TaskPriority.Critical => "Critical priority with no deadline",
-                TaskPriority.High => "High priority with no deadline",
-                _ => PriorityReason(task.Priority)
-            };
-            return task with { Score = score, RecommendationReason = reason };
-        }
-
-        var due = task.DueDate.Value.Date;
-        var days = (due - today).Days;
-        if (days < 0)
-        {
-            score += OverdueScore;
-            reason = $"Overdue by {Math.Abs(days)} day{(Math.Abs(days) == 1 ? string.Empty : "s")}";
-        }
-        else if (days == 0)
-        {
-            score += DueTodayScore;
-            reason = "Due today";
-        }
-        else if (days == 1)
-        {
-            score += DueTomorrowScore;
-            reason = "Due tomorrow";
-        }
-        else if (days == 2)
-        {
-            score += DueInTwoDaysScore;
-            reason = "Due in 2 days";
-        }
-        else if (days == 3)
-        {
-            score += DueInThreeDaysScore;
-            reason = "Due in 3 days";
-        }
-        else if (task.Priority is TaskPriority.High or TaskPriority.Critical)
-        {
-            reason = task.Priority switch
-            {
-                TaskPriority.Critical => "Critical priority upcoming",
-                TaskPriority.High => "High priority upcoming",
-                _ => string.Empty
-            };
-        }
-
-        score += PriorityScore(task.Priority);
-        if (string.IsNullOrWhiteSpace(reason))
-        {
-            reason = PriorityReason(task.Priority);
-        }
-        else
-        {
-            reason = task.Priority switch
-            {
-                TaskPriority.Critical when days == 0 => "Critical priority and due today",
-                TaskPriority.High when days == 1 => "High priority and due tomorrow",
-                TaskPriority.Critical => "Critical priority with deadline approaching",
-                TaskPriority.High => "High priority with deadline approaching",
-                _ => reason
-            };
-        }
-
-        return task with { Score = score, RecommendationReason = reason };
-    }
-
-    private static int PriorityScore(TaskPriority priority)
-        => priority switch
+    private static int Score(TodayTaskCandidate task)
+        => task.Priority switch
         {
             TaskPriority.Critical => CriticalScore,
             TaskPriority.High => HighScore,
             TaskPriority.Medium => MediumScore,
-            TaskPriority.Low => LowScore,
             _ => LowScore
-        };
-
-    private static string PriorityReason(TaskPriority priority)
-        => priority switch
-        {
-            TaskPriority.Critical => "Critical priority",
-            TaskPriority.High => "High priority",
-            TaskPriority.Medium => "Medium priority",
-            _ => "Low priority"
         };
 }

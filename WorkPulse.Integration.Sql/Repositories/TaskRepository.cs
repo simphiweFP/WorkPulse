@@ -9,7 +9,7 @@ namespace WorkPulse.Integration.Sql.Repositories;
 public sealed class TaskRepository : ITaskRepository
 {
     private readonly IDbConnectionFactory _connectionFactory;
-    private const string TaskSelectColumns = "t.Id, t.ProjectId, t.SprintId, COALESCE(s.Name, '') AS SprintName, p.Name AS ProjectName, c.Id AS ClientId, c.Name AS ClientName, t.AssignedUserId AS AssignedToUserId, COALESCE(CONCAT(u.FirstName, ' ', u.LastName), '') AS AssignedUserName, t.Title, t.Description, t.DueDate AS Deadline, t.Status, t.Priority, t.CreatedAt, t.UpdatedAt, t.CompletedAt";
+    private const string TaskSelectColumns = "t.Id, t.ProjectId, t.SprintId, t.TaskType AS Type, COALESCE(t.SprintOrder, 0) AS SprintOrder, COALESCE(s.Name, '') AS SprintName, p.Name AS ProjectName, c.Id AS ClientId, c.Name AS ClientName, t.AssignedUserId AS AssignedToUserId, COALESCE(CONCAT(u.FirstName, ' ', u.LastName), '') AS AssignedUserName, t.Title, t.Description, t.StoryPoints, t.DueDate AS Deadline, t.Status, t.Priority, t.CreatedAt, t.UpdatedAt, t.CompletedAt";
 
     public TaskRepository(IDbConnectionFactory connectionFactory)
     {
@@ -25,7 +25,7 @@ public sealed class TaskRepository : ITaskRepository
                            INNER JOIN Clients c ON c.Id = p.ClientId
                             LEFT JOIN Sprints s ON s.Id = t.SprintId
                            LEFT JOIN Users u ON u.Id = t.AssignedUserId
-                           ORDER BY t.CreatedAt DESC
+                            ORDER BY CASE WHEN t.SprintId IS NULL THEN 1 ELSE 0 END, COALESCE(t.SprintOrder, 2147483647), t.CreatedAt DESC
                            """;
 
         await using var connection = (Microsoft.Data.SqlClient.SqlConnection)_connectionFactory.CreateConnection();
@@ -59,11 +59,29 @@ public sealed class TaskRepository : ITaskRepository
                             LEFT JOIN Sprints s ON s.Id = t.SprintId
                            LEFT JOIN Users u ON u.Id = t.AssignedUserId
                            WHERE t.ProjectId = @ProjectId
-                           ORDER BY t.CreatedAt DESC
+                            ORDER BY CASE WHEN t.SprintId IS NULL THEN 1 ELSE 0 END, COALESCE(t.SprintOrder, 2147483647), t.CreatedAt DESC
                            """;
 
         await using var connection = (Microsoft.Data.SqlClient.SqlConnection)_connectionFactory.CreateConnection();
         var items = await connection.QueryAsync<TaskItem>(new CommandDefinition(sql, new { ProjectId = projectId }, cancellationToken: cancellationToken));
+        return items.ToArray();
+    }
+
+    public async Task<IReadOnlyCollection<TaskItem>> GetBySprintIdAsync(Guid sprintId, CancellationToken cancellationToken = default)
+    {
+        var sql = $"""
+                           SELECT {TaskSelectColumns}
+                           FROM Tasks t
+                           INNER JOIN Projects p ON p.Id = t.ProjectId
+                           INNER JOIN Clients c ON c.Id = p.ClientId
+                            LEFT JOIN Sprints s ON s.Id = t.SprintId
+                           LEFT JOIN Users u ON u.Id = t.AssignedUserId
+                           WHERE t.SprintId = @SprintId
+                            ORDER BY CASE WHEN t.SprintId IS NULL THEN 1 ELSE 0 END, COALESCE(t.SprintOrder, 2147483647), t.CreatedAt DESC
+                           """;
+
+        await using var connection = (Microsoft.Data.SqlClient.SqlConnection)_connectionFactory.CreateConnection();
+        var items = await connection.QueryAsync<TaskItem>(new CommandDefinition(sql, new { SprintId = sprintId }, cancellationToken: cancellationToken));
         return items.ToArray();
     }
 
@@ -99,7 +117,7 @@ public sealed class TaskRepository : ITaskRepository
             sql += " AND CAST(t.DueDate AS date) = CAST(@Deadline AS date)";
         }
 
-        sql += " ORDER BY t.DueDate";
+        sql += " ORDER BY CASE WHEN t.SprintId IS NULL THEN 1 ELSE 0 END, COALESCE(t.SprintOrder, 2147483647), t.DueDate";
 
         await using var connection = (Microsoft.Data.SqlClient.SqlConnection)_connectionFactory.CreateConnection();
         var items = await connection.QueryAsync<TaskItem>(new CommandDefinition(sql, new
@@ -117,8 +135,8 @@ public sealed class TaskRepository : ITaskRepository
     public async Task CreateAsync(TaskItem taskItem, CancellationToken cancellationToken = default)
     {
         const string sql = """
-                           INSERT INTO Tasks (Id, ProjectId, SprintId, AssignedUserId, Title, Description, DueDate, Status, Priority, CreatedAt, UpdatedAt, CompletedAt)
-                           VALUES (@Id, @ProjectId, @SprintId, @AssignedUserId, @Title, @Description, @DueDate, @Status, @Priority, @CreatedAt, @UpdatedAt, @CompletedAt)
+                            INSERT INTO Tasks (Id, ProjectId, SprintId, TaskType, AssignedUserId, Title, Description, StoryPoints, SprintOrder, DueDate, Status, Priority, CreatedAt, UpdatedAt, CompletedAt)
+                            VALUES (@Id, @ProjectId, @SprintId, @Type, @AssignedUserId, @Title, @Description, @StoryPoints, @SprintOrder, @DueDate, @Status, @Priority, @CreatedAt, @UpdatedAt, @CompletedAt)
                            """;
 
         await using var connection = (Microsoft.Data.SqlClient.SqlConnection)_connectionFactory.CreateConnection();
@@ -127,9 +145,12 @@ public sealed class TaskRepository : ITaskRepository
             taskItem.Id,
             taskItem.ProjectId,
             SprintId = taskItem.SprintId,
+            Type = (int)taskItem.Type,
             AssignedUserId = taskItem.AssignedToUserId,
             taskItem.Title,
             taskItem.Description,
+            taskItem.StoryPoints,
+            SprintOrder = taskItem.SprintOrder,
             DueDate = taskItem.Deadline,
             Status = (int)taskItem.Status,
             Priority = (int)taskItem.Priority,
@@ -142,12 +163,15 @@ public sealed class TaskRepository : ITaskRepository
     public async Task UpdateAsync(TaskItem taskItem, CancellationToken cancellationToken = default)
     {
         const string sql = """
-                           UPDATE Tasks
-                           SET ProjectId = @ProjectId,
+                            UPDATE Tasks
+                                SET ProjectId = @ProjectId,
                                SprintId = @SprintId,
+                                TaskType = @Type,
                                AssignedUserId = @AssignedUserId,
                                Title = @Title,
                                Description = @Description,
+                                 StoryPoints = @StoryPoints,
+                                SprintOrder = @SprintOrder,
                                DueDate = @DueDate,
                                Status = @Status,
                                Priority = @Priority,
@@ -162,9 +186,12 @@ public sealed class TaskRepository : ITaskRepository
             taskItem.Id,
             taskItem.ProjectId,
             SprintId = taskItem.SprintId,
+            Type = (int)taskItem.Type,
             AssignedUserId = taskItem.AssignedToUserId,
             taskItem.Title,
             taskItem.Description,
+            taskItem.StoryPoints,
+            SprintOrder = taskItem.SprintOrder,
             DueDate = taskItem.Deadline,
             Status = (int)taskItem.Status,
             Priority = (int)taskItem.Priority,

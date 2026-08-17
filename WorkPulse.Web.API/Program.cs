@@ -74,18 +74,20 @@ builder.Services.AddSwaggerGen(options =>
 
 var app = builder.Build();
 
-if (app.Environment.IsDevelopment())
+using (var scope = app.Services.CreateScope())
 {
-    using var scope = app.Services.CreateScope();
-
     var bootstrapper = scope.ServiceProvider.GetRequiredService<DatabaseBootstrapper>();
     var migrationRunner = scope.ServiceProvider.GetRequiredService<MigrationRunner>();
-    var seeder = scope.ServiceProvider.GetRequiredService<IDatabaseSeeder>();
     var startupLogger = scope.ServiceProvider.GetRequiredService<ILoggerFactory>().CreateLogger("WorkPulse.Startup");
 
     await bootstrapper.EnsureDatabaseExistsAsync();
     await migrationRunner.MigrateUpAsync();
-    await seeder.SeedAsync(startupLogger);
+
+    if (app.Environment.IsDevelopment())
+    {
+        var seeder = scope.ServiceProvider.GetRequiredService<IDatabaseSeeder>();
+        await seeder.SeedAsync(startupLogger);
+    }
 }
 
 app.UseGlobalExceptionMiddleware();

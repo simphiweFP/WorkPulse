@@ -1,6 +1,7 @@
 using Dapper;
 using WorkPulse.Application.DTOs.Users;
 using WorkPulse.Application.Interfaces;
+using WorkPulse.Domain.Constants;
 using WorkPulse.Domain.Entities;
 
 namespace WorkPulse.Integration.Sql.Repositories;
@@ -58,6 +59,38 @@ public sealed class UserRepository : IUserRepository
         return developers.ToArray();
     }
 
+    public async Task<IReadOnlyCollection<UserManagementDto>> GetUserManagementAsync(CancellationToken cancellationToken = default)
+    {
+        const string sql = """
+                           SELECT u.Id,
+                                  u.FirstName,
+                                  u.LastName,
+                                  CONCAT(u.FirstName, ' ', u.LastName) AS FullName,
+                                  u.Email,
+                                  u.CreatedAt,
+                                  COALESCE(r.Name, @Pending) AS Role
+                           FROM Users u
+                           OUTER APPLY (
+                               SELECT TOP 1 r.Name
+                               FROM UserRoles ur
+                               INNER JOIN Roles r ON r.Id = ur.RoleId
+                               WHERE ur.UserId = u.Id
+                               ORDER BY CASE r.Name WHEN @Admin THEN 1 WHEN @Developer THEN 2 WHEN @Pending THEN 3 ELSE 4 END
+                           ) r
+                           WHERE u.IsDeleted = 0
+                           ORDER BY u.LastName, u.FirstName
+                           """;
+
+        await using var connection = (Microsoft.Data.SqlClient.SqlConnection)_connectionFactory.CreateConnection();
+        var users = await connection.QueryAsync<UserManagementDto>(new CommandDefinition(sql, new
+        {
+            Admin = Roles.Admin,
+            Developer = Roles.Developer,
+            Pending = Roles.Pending
+        }, cancellationToken: cancellationToken));
+        return users.ToArray();
+    }
+
     public async Task<ApplicationUser?> GetByIdAsync(string userId, CancellationToken cancellationToken = default)
     {
         const string sql = """
@@ -87,6 +120,7 @@ public sealed class UserRepository : IUserRepository
         const string sql = "SELECT COUNT(1) FROM Users WHERE Email = @Email";
 
         await using var connection = (Microsoft.Data.SqlClient.SqlConnection)_connectionFactory.CreateConnection();
+        await connection.OpenAsync(cancellationToken);
         var count = await connection.ExecuteScalarAsync<int>(new CommandDefinition(sql, new { Email = email }, cancellationToken: cancellationToken));
         return count > 0;
     }
@@ -149,6 +183,48 @@ public sealed class UserRepository : IUserRepository
         await using var connection = (Microsoft.Data.SqlClient.SqlConnection)_connectionFactory.CreateConnection();
         var roles = await connection.QueryAsync<string>(new CommandDefinition(sql, new { UserId = userId }, cancellationToken: cancellationToken));
         return roles.ToArray();
+    }
+
+    public async Task<int> CountAdminsAsync(CancellationToken cancellationToken = default)
+    {
+        const string sql = """
+                           SELECT COUNT(1)
+                           FROM Users u
+                           INNER JOIN UserRoles ur ON ur.UserId = u.Id
+                           INNER JOIN Roles r ON r.Id = ur.RoleId
+                           WHERE u.IsDeleted = 0
+                             AND r.Name = @Admin
+                           """;
+
+        await using var connection = (Microsoft.Data.SqlClient.SqlConnection)_connectionFactory.CreateConnection();
+        return await connection.ExecuteScalarAsync<int>(new CommandDefinition(sql, new { Admin = Roles.Admin }, cancellationToken: cancellationToken));
+    }
+
+    public async Task UpdateRoleAsync(string userId, string? role, CancellationToken cancellationToken = default)
+    {
+        const string deleteSql = "DELETE ur FROM UserRoles ur INNER JOIN Roles r ON r.Id = ur.RoleId WHERE ur.UserId = @UserId";
+        const string insertSql = "INSERT INTO UserRoles (UserId, RoleId) SELECT @UserId, r.Id FROM Roles r WHERE r.Name = @RoleName";
+
+        await using var connection = (Microsoft.Data.SqlClient.SqlConnection)_connectionFactory.CreateConnection();
+        await connection.OpenAsync(cancellationToken);
+        await using var transaction = await connection.BeginTransactionAsync(cancellationToken);
+
+        try
+        {
+            await connection.ExecuteAsync(new CommandDefinition(deleteSql, new { UserId = userId }, transaction, cancellationToken: cancellationToken));
+
+            if (!string.IsNullOrWhiteSpace(role) && !string.Equals(role, Roles.Pending, StringComparison.OrdinalIgnoreCase))
+            {
+                await connection.ExecuteAsync(new CommandDefinition(insertSql, new { UserId = userId, RoleName = role.Trim() }, transaction, cancellationToken: cancellationToken));
+            }
+
+            await transaction.CommitAsync(cancellationToken);
+        }
+        catch
+        {
+            await transaction.RollbackAsync(cancellationToken);
+            throw;
+        }
     }
 
     public async Task<bool> UserExistsAsync(string userId, CancellationToken cancellationToken = default)

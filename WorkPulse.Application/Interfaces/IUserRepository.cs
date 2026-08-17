@@ -7,10 +7,13 @@ public interface IUserRepository
 {
     Task<IReadOnlyCollection<ApplicationUser>> GetAllAsync(CancellationToken cancellationToken = default);
     Task<IReadOnlyCollection<DeveloperDto>> GetDevelopersAsync(CancellationToken cancellationToken = default);
+    Task<IReadOnlyCollection<UserManagementDto>> GetUserManagementAsync(CancellationToken cancellationToken = default);
     Task<ApplicationUser?> GetByIdAsync(string userId, CancellationToken cancellationToken = default);
     Task<ApplicationUser?> GetByEmailAsync(string email, CancellationToken cancellationToken = default);
     Task<bool> EmailExistsAsync(string email, CancellationToken cancellationToken = default);
     Task CreateAsync(ApplicationUser user, string passwordHash, IEnumerable<string> roles, CancellationToken cancellationToken = default);
     Task<IReadOnlyCollection<string>> GetRolesAsync(string userId, CancellationToken cancellationToken = default);
+    Task<int> CountAdminsAsync(CancellationToken cancellationToken = default);
+    Task UpdateRoleAsync(string userId, string? role, CancellationToken cancellationToken = default);
     Task<bool> UserExistsAsync(string userId, CancellationToken cancellationToken = default);
 }

@@ -1,4 +1,5 @@
 using System.Net;
+using Microsoft.Data.SqlClient;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
@@ -38,6 +39,10 @@ public class GlobalExceptionMiddleware
         catch (ValidationException ex)
         {
             await WriteProblemAsync(context, HttpStatusCode.BadRequest, "Validation failed", ex.Message);
+        }
+        catch (SqlException ex) when (ex.Number is 2601 or 2627 && ex.Message.Contains("IX_Clients_ContactEmail", StringComparison.OrdinalIgnoreCase))
+        {
+            await WriteProblemAsync(context, HttpStatusCode.Conflict, "Conflict", "A client with this email already exists.");
         }
         catch (UnauthorizedException ex)
         {

@@ -7,6 +7,7 @@ public class TaskItem
     public Guid Id { get; set; }
     public Guid ProjectId { get; set; }
     public Guid? SprintId { get; set; }
+    public TaskType Type { get; set; } = TaskType.Story;
     public string SprintName { get; set; } = string.Empty;
     public string ProjectName { get; set; } = string.Empty;
     public Guid ClientId { get; set; }
@@ -14,6 +15,8 @@ public class TaskItem
     public string Title { get; set; } = string.Empty;
     public string Description { get; set; } = string.Empty;
     public TaskPriority Priority { get; set; } = TaskPriority.Medium;
+    public int StoryPoints { get; set; }
+    public int? SprintOrder { get; set; }
     public DateTime? Deadline { get; set; }
     public Enums.TaskStatus Status { get; set; } = Enums.TaskStatus.Todo;
     public string? AssignedToUserId { get; set; }

@@ -5,6 +5,7 @@ namespace WorkPulse.Application.Interfaces;
 public interface ISprintService
 {
     Task<IReadOnlyCollection<SprintDto>> GetAllAsync(CancellationToken cancellationToken = default);
+    Task<IReadOnlyCollection<SprintDto>> GetByProjectIdAsync(Guid projectId, CancellationToken cancellationToken = default);
     Task<SprintDto> GetByIdAsync(Guid id, CancellationToken cancellationToken = default);
     Task<SprintDto> CreateAsync(CreateSprintRequestDto request, CancellationToken cancellationToken = default);
     Task UpdateAsync(Guid id, UpdateSprintRequestDto request, CancellationToken cancellationToken = default);

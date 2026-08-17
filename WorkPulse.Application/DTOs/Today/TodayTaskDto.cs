@@ -10,8 +10,10 @@ public sealed class TodayTaskDto
     public string ProjectName { get; init; } = string.Empty;
     public Guid ClientId { get; init; }
     public string ClientName { get; init; } = string.Empty;
+    public TaskType Type { get; init; }
     public string Title { get; init; } = string.Empty;
     public string Description { get; init; } = string.Empty;
+    public int? SprintOrder { get; init; }
     public DateTime? Deadline { get; init; }
     public TaskStatus Status { get; init; }
     public TaskPriority Priority { get; init; }

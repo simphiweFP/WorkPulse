@@ -5,5 +5,5 @@ namespace WorkPulse.Application.Interfaces;
 public interface ITodayService
 {
     Task<TodayDashboardDto> GetMyTodayAsync(string userId, CancellationToken cancellationToken = default);
-    Task<TodayDashboardDto> GetAdminTodayAsync(CancellationToken cancellationToken = default);
+    Task<TodayDashboardDto> GetAdminTodayAsync(string userId, CancellationToken cancellationToken = default);
 }

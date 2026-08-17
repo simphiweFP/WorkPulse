@@ -10,6 +10,7 @@ public interface ITaskService
     Task<TaskDto> GetByIdAsync(Guid id, CancellationToken cancellationToken = default);
     Task<IReadOnlyCollection<TaskDto>> GetByProjectIdAsync(Guid projectId, CancellationToken cancellationToken = default);
     Task<IReadOnlyCollection<TaskDto>> GetMyTasksAsync(string userId, GetMyTasksFilterDto filter, CancellationToken cancellationToken = default);
+    Task<IReadOnlyCollection<TaskDto>> GetBacklogAsync(string userId, bool isAdmin, CancellationToken cancellationToken = default);
     Task<TaskDto> CreateAsync(CreateTaskRequestDto request, CancellationToken cancellationToken = default);
     Task UpdateAsync(Guid id, UpdateTaskRequestDto request, CancellationToken cancellationToken = default);
     Task DeleteAsync(Guid id, CancellationToken cancellationToken = default);
