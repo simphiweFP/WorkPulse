@@ -21,7 +21,8 @@
     </section>
 
     <section class="work-columns">
-      @if (activeTab() === 'current-sprint') {
+      <!-- @if (activeTab() === 'current-sprint') {his comparison appears to be unintentional because the types '"upcoming" | "completed"' and '"current-sprint"' have no overlap.ngtsc(2367)
+      my-tasks.component.ts(17, 16): Error occurs in the template of component MyTasksComponent.
         <article id="current-sprint" class="panel work-panel work-panel--full">
           <header class="work-panel__header">
             <div>
@@ -59,7 +60,8 @@
             <app-empty-state title="No work assigned for the current sprint." message="Your current sprint assignment is clear." />
           }
         </article>
-      } @else if (activeTab() === 'upcoming') {
+      } @else  -->
+      @if (activeTab() === 'upcoming') {
         <article id="upcoming" class="panel work-panel work-panel--full">
           <header class="work-panel__header">
             <div>
