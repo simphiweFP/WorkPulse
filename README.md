@@ -100,8 +100,6 @@ Each task belongs to a Project and can be assigned to a Developer and optionally
 | Deadline | Expected delivery date |
 
 
-```
-
 ---
 
 ## 📦 Backlog and Sprint Planning
