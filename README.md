@@ -99,15 +99,7 @@ Each task belongs to a Project and can be assigned to a Developer and optionally
 | Assignee | Developer responsible for the task |
 | Deadline | Expected delivery date |
 
-### Task statuses
 
-```csharp
-public enum TaskStatus
-{
-    Todo = 1,
-    InProgress = 2,
-    Completed = 3
-}
 ```
 
 ---
