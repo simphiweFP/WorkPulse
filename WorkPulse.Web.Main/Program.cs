@@ -89,11 +89,15 @@ builder.Services.AddSwaggerGen(options =>
 
 var app = builder.Build();
 
-using (var scope = app.Services.CreateScope())
+if(!app.Environment.IsEnvironment("Testing"))
 {
+    using var scope = app.Services.CreateScope();
+
     var bootstrapper = scope.ServiceProvider.GetRequiredService<DatabaseBootstrapper>();
     var migrationRunner = scope.ServiceProvider.GetRequiredService<MigrationRunner>();
-    var startupLogger = scope.ServiceProvider.GetRequiredService<ILoggerFactory>().CreateLogger("WorkPulse.Startup");
+    var startupLogger = scope.ServiceProvider
+        .GetRequiredService<ILoggerFactory>()
+        .CreateLogger("WorkPulse.Startup");
 
     await bootstrapper.EnsureDatabaseExistsAsync();
     await migrationRunner.MigrateUpAsync();

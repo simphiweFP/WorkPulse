@@ -9,7 +9,20 @@ namespace WorkPulse.Web.API.Tests.Infrastructure;
 internal sealed class FakeIdentityService : IIdentityService
 {
     private readonly ConcurrentDictionary<string, FakeUser> _users = new(StringComparer.OrdinalIgnoreCase);
+    public FakeIdentityService()
+    {
+        var admin = new FakeUser
+        {
+            Id = "test-admin",
+            FirstName = "Admin",
+            LastName = "User",
+            Email = "admin@workpulse.local",
+            Password = "WorkPulseAdmin123!",
+            Role = WorkPulseRoles.Admin
+        };
 
+        _users[admin.Email] = admin;
+    }
     public Task<Result<AuthResponse>> RegisterAsync(RegisterUserRequest request, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
@@ -37,7 +50,7 @@ internal sealed class FakeIdentityService : IIdentityService
             LastName = request.LastName.Trim(),
             Email = email,
             Password = request.Password,
-            Role = WorkPulseRoles.Developer
+            Role = WorkPulseRoles.Pending
         };
 
         _users[email] = user;
@@ -83,7 +96,7 @@ internal sealed class FakeIdentityService : IIdentityService
             Email = user.Email,
             Role = user.Role
         },
-        Token = $"fake-token-{user.Id}"
+        Token = $"fake-token|{user.Role}|{user.Id}"
     };
 
     private sealed class FakeUser

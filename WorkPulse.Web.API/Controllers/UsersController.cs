@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 using WorkPulse.Application.Interfaces;
 using WorkPulse.Domain.Constants;
 using WorkPulse.Web.API.Contracts.Requests.Users;
@@ -8,7 +9,7 @@ namespace WorkPulse.Web.API.Controllers;
 
 [ApiController]
 [Route("api/users")]
-[Authorize(Roles = Roles.Admin)]
+[Authorize]
 public sealed class UsersController : ControllerBase
 {
     private readonly IUserRepository _userRepository;
@@ -19,9 +20,26 @@ public sealed class UsersController : ControllerBase
     }
 
     [HttpGet("developers")]
-    [Authorize(Roles = Roles.Admin)]
     public async Task<IActionResult> GetDevelopers(CancellationToken cancellationToken)
-        => Ok(await _userRepository.GetDevelopersAsync(cancellationToken));
+    {
+        var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        var devs = (await _userRepository.GetDevelopersAsync(cancellationToken)).ToArray();
+
+        // Admins see all developers
+        if (User.IsInRole(Roles.Admin))
+        {
+            return Ok(devs);
+        }
+
+        // Non-admins see only themselves if they are in the developer list
+        if (string.IsNullOrWhiteSpace(currentUserId))
+        {
+            return Unauthorized();
+        }
+
+        var mine = devs.Where(d => string.Equals(d.Id, currentUserId, StringComparison.OrdinalIgnoreCase)).ToArray();
+        return Ok(mine);
+    }
 
     [HttpGet]
     [Authorize(Roles = Roles.Admin)]

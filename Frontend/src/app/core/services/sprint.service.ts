@@ -42,6 +42,12 @@ export class SprintService {
     );
   }
 
+getMine(): Observable<SprintSummary[]> {
+  return this.http.get<SprintResponse[]>(`${apiConfig.apiBaseUrl}/sprints/mine`).pipe(
+    map((sprints) => sprints.map((sprint) => this.toSummary(sprint)))
+  );
+}
+
   createSprint(request: SprintUpsertRequest): Observable<SprintDetails> {
     return this.http.post<SprintResponse>(`${apiConfig.apiBaseUrl}/sprints`, request).pipe(
       map((sprint) => this.toDetails(sprint))

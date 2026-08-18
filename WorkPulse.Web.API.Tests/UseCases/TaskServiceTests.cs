@@ -6,6 +6,7 @@ using WorkPulse.Application.Interfaces;
 using WorkPulse.Application.Services;
 using WorkPulse.Domain.Entities;
 using WorkPulse.Domain.Enums;
+using WorkPulse.Integration.Identity.Roles;
 using TaskStatus = WorkPulse.Domain.Enums.TaskStatus;
 
 namespace WorkPulse.Web.API.Tests.UseCases;
@@ -505,9 +506,12 @@ public class TaskServiceTests
 
         var users = new Dictionary<string, ApplicationUser>
         {
-            ["dev-1"] = new ApplicationUser { Id = "dev-1", Email = "dev@example.com", UserName = "dev@example.com", FirstName = "Dev", LastName = "One" }
+            ["dev-1"] = new ApplicationUser { Id = "dev-1", Email = "dev@example.com", UserName = "dev@example.com", FirstName = "Dev", LastName = "One", }
         };
-
+        var userRoles = new Dictionary<string, string>
+        {
+            ["dev-1"] = WorkPulseRoles.Developer
+        };
         var projects = new Dictionary<Guid, Project>
         {
             [projectId] = new Project { Id = projectId, ClientId = clientId, Name = "Proj", Description = "Test", Status = ProjectStatus.Active, CreatedAt = now, UpdatedAt = now }
@@ -515,12 +519,14 @@ public class TaskServiceTests
 
         var sprints = new Dictionary<Guid, Sprint>
         {
-            [sprintId] = new Sprint { Id = sprintId, ProjectId = projectId, Name = "Sprint 1", StartDate = now, EndDate = now.AddDays(7), Status = SprintStatus.Active, CreatedAt = now, UpdatedAt = now }
+            [sprintId] = new Sprint { Id = sprintId, ProjectId = projectId, Name = "Sprint 1", StartDate = now, EndDate = now.AddDays(7), Status = SprintStatus.Active, CreatedAt = now, UpdatedAt = now,
+                TotalTasks = 8
+            }
         };
 
         var tasks = new Dictionary<Guid, TaskItem>();
 
-        var service = CreateService(tasks: tasks, projects: projects, sprints: sprints, users: users);
+        var service = CreateService(tasks: tasks, projects: projects, sprints: sprints, users: users, userRoles: userRoles);
 
         // Act
         var created = await service.CreateAsync(new CreateTaskRequestDto
@@ -547,12 +553,12 @@ public class TaskServiceTests
         Assert.NotNull(stored.CompletedAt);
     }
 
-    private static TaskService CreateService(Dictionary<Guid, TaskItem>? tasks = null, Dictionary<Guid, Project>? projects = null, Dictionary<Guid, Sprint>? sprints = null, Dictionary<string, ApplicationUser>? users = null)
+    private static TaskService CreateService(Dictionary<Guid, TaskItem>? tasks = null, Dictionary<Guid, Project>? projects = null, Dictionary<Guid, Sprint>? sprints = null, Dictionary<string, ApplicationUser>? users = null, Dictionary<string, string>? userRoles = null)
         => new(
             new FakeTaskRepository(tasks ?? new()),
             new FakeProjectRepository(projects ?? new()),
             new FakeSprintRepository(sprints ?? new()),
-            new FakeUserRepository(users ?? new()),
+        new FakeUserRepository(users ?? new(), userRoles),
             new FixedClock(new DateTime(2026, 8, 14, 9, 0, 0, DateTimeKind.Utc)));
 
     private sealed class FixedClock : IClock
@@ -613,8 +619,22 @@ public class TaskServiceTests
     {
         private readonly Dictionary<string, ApplicationUser> _users;
         private readonly Dictionary<string, List<string>> _roles = new();
-        public FakeUserRepository(Dictionary<string, ApplicationUser> users) => _users = users;
+        public FakeUserRepository(
+            Dictionary<string, ApplicationUser> users,
+            Dictionary<string, string>? userRoles = null)
+        {
+            _users = users;
 
+            if (userRoles is null)
+            {
+                return;
+            }
+
+            foreach (var (userId, role) in userRoles)
+            {
+                _roles[userId] = new List<string> { role };
+            }
+        }
         public Task<IReadOnlyCollection<ApplicationUser>> GetAllAsync(CancellationToken cancellationToken = default)
             => Task.FromResult<IReadOnlyCollection<ApplicationUser>>(_users.Values.ToArray());
 

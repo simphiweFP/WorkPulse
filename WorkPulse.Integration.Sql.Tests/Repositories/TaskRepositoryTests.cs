@@ -336,6 +336,9 @@ public class TaskRepositoryTests
                                DueDate DATETIME2 NULL,
                                Status INT NOT NULL,
                                Priority INT NOT NULL,
+                               TaskType INT NOT NULL DEFAULT 1,
+                               StoryPoints INT NOT NULL DEFAULT 0,
+                               SprintOrder INT NULL,
                                CreatedAt DATETIME2 NOT NULL,
                                UpdatedAt DATETIME2 NOT NULL,
                                CompletedAt DATETIME2 NULL

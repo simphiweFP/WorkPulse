@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Authorization;
+using System.Security.Claims;
 using Microsoft.AspNetCore.Mvc;
 using WorkPulse.Application.DTOs.Sprints;
 using WorkPulse.Application.Interfaces;
@@ -13,10 +14,12 @@ namespace WorkPulse.Web.API.Controllers;
 public sealed class SprintsController : ControllerBase
 {
     private readonly ISprintService _sprintService;
+    private readonly ITaskService _taskService;
 
-    public SprintsController(ISprintService sprintService)
+    public SprintsController(ISprintService sprintService, ITaskService taskService)
     {
         _sprintService = sprintService;
+        _taskService = taskService;
     }
 
     [HttpGet]
@@ -38,6 +41,45 @@ public sealed class SprintsController : ControllerBase
     {
         var sprint = await _sprintService.GetByIdAsync(id, cancellationToken);
         return Ok(Map(sprint));
+    }
+
+    [HttpGet("mine")]
+    public async Task<ActionResult<IReadOnlyCollection<SprintResponse>>> GetMine(
+     CancellationToken cancellationToken)
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+        if (string.IsNullOrWhiteSpace(userId))
+        {
+            return Unauthorized();
+        }
+
+        var tasks = await _taskService.GetMyTasksAsync(
+            userId,
+            new Application.DTOs.Tasks.GetMyTasksFilterDto(),
+            cancellationToken);
+
+        var sprintIds = tasks
+            .Where(task => task.SprintId.HasValue)
+            .Select(task => task.SprintId!.Value)
+            .Distinct()
+            .ToList();
+
+        var results = new List<SprintResponse>();
+
+        foreach (var sprintId in sprintIds)
+        {
+            var sprint = await _sprintService.GetByIdAsync(
+                sprintId,
+                cancellationToken);
+
+            if (sprint is not null)
+            {
+                results.Add(Map(sprint));
+            }
+        }
+
+        return Ok(results);
     }
 
     [HttpPost]

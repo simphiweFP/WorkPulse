@@ -14,6 +14,7 @@ import { FeedbackAlertService } from '../../shared/services/feedback-alert.servi
 import { lockBodyScroll, unlockBodyScroll } from '../../shared/utilities/modal-state';
 import { TaskAdminSummary, TaskAssigneeOption, TaskUpsertRequest } from '../../core/models/task-admin.models';
 import { TaskService } from '../../core/services/task.service';
+import { TaskRecommendation } from '../../shared/models/task.models';
 
 @Component({
   selector: 'app-sprints',
@@ -132,51 +133,55 @@ export class SprintsComponent implements OnInit {
   }
 
   loadSprints(): void {
-    this.loading.set(true);
-    this.error.set('');
+  this.loading.set(true);
+  this.error.set('');
 
-    this.projectService
-      .getProjects()
-      .pipe(catchError(() => of([] as ProjectSummary[])))
-      .subscribe((projects) => {
-        this.projects.set(projects);
-        this.availableProjects.set(projects);
-      });
+  this.projectService
+    .getProjects()
+    .pipe(catchError(() => of([] as ProjectSummary[])))
+    .subscribe((projects) => {
+      this.projects.set(projects);
+      this.availableProjects.set(projects);
+    });
 
+  if (this.canViewAllSprints()) {
     this.taskService
       .getDevelopers()
       .pipe(catchError(() => of([] as TaskAssigneeOption[])))
       .subscribe((assignees) => this.taskAssignees.set(assignees));
 
-    const sprints$ = this.sprintService.getSprints().pipe(
-      catchError(() => {
-        this.error.set('Unable to load sprint data right now.');
-        return of([] as SprintSummary[]);
-      })
-    );
-
-    if (this.canViewAllSprints()) {
-      sprints$
-        .pipe(finalize(() => this.loading.set(false)))
-        .subscribe((sprints) => {
-          this.sprints.set(sprints);
-        });
-      return;
-    }
-
-    this.taskService
-      .getMyTasks()
+    this.sprintService
+      .getSprints()
       .pipe(
-        catchError(() => of([] as TaskAdminSummary[])),
+        catchError(() => {
+          this.error.set('Unable to load sprint data right now.');
+          return of([] as SprintSummary[]);
+        }),
         finalize(() => this.loading.set(false))
       )
-      .subscribe((tasks) => {
-        const sprintIds = new Set(tasks.map((task) => task.sprintId).filter((value): value is string => !!value));
-        sprints$.subscribe((sprints) => {
-          this.sprints.set(sprints.filter((sprint) => sprintIds.has(sprint.id)));
-        });
+      .subscribe((sprints) => {
+        this.sprints.set(sprints);
       });
+
+    return;
   }
+
+  // Developer: endpoint returns only Sprints with tasks assigned to this user.
+  this.taskAssignees.set([]);
+
+  this.sprintService
+    .getMine()
+    .pipe(
+      catchError(() => {
+        this.error.set('Unable to load your sprint data right now.');
+        return of([] as SprintSummary[]);
+      }),
+      finalize(() => this.loading.set(false))
+    )
+    .subscribe((sprints) => {
+      this.sprints.set(sprints);
+    });
+}
 
   completionPercent(): number {
     const sprint = this.selectedSprint();
@@ -458,9 +463,11 @@ export class SprintsComponent implements OnInit {
   }
 
   private loadSprintTasks(sprint: SprintSummary): void {
-    this.sprintTaskLoading.set(true);
-    this.sprintTaskError.set('');
+  this.sprintTaskLoading.set(true);
+  this.sprintTaskError.set('');
 
+  if (this.canManageSprints()) {
+    // Admin: can see every task in the selected Sprint.
     this.taskService
       .getTasks({ projectId: sprint.projectId })
       .pipe(
@@ -471,10 +478,44 @@ export class SprintsComponent implements OnInit {
         finalize(() => this.sprintTaskLoading.set(false))
       )
       .subscribe((tasks) => {
-        this.sprintTasks.set(tasks.filter((task) => task.sprintId === sprint.id));
-        this.availableSprintTasks.set(tasks.filter((task) => task.projectId === sprint.projectId && task.status !== 'Completed'));
-      });
+  const sprintTasks = tasks.map((task) => this.toSprintTask(task));
+
+  this.sprintTasks.set(
+    sprintTasks.filter((task) => task.sprintId === sprint.id)
+  );
+
+  this.availableSprintTasks.set(
+    sprintTasks.filter(
+      (task) =>
+        task.projectId === sprint.projectId &&
+        task.status !== 'Completed'
+    )
+  );
+});
+
+    return;
   }
+
+  // Developer: getMyTasks already returns only tasks assigned to this user.
+  this.taskService
+  .getMyTasks()
+  .pipe(
+    catchError(() => {
+      this.sprintTaskError.set('We could not load tasks for this sprint right now.');
+      return of([] as TaskAdminSummary[]);
+    }),
+    finalize(() => this.sprintTaskLoading.set(false))
+  )
+  .subscribe((tasks) => {
+  const sprintTasks = tasks.map((task) => this.toSprintTask(task));
+
+  this.sprintTasks.set(
+    sprintTasks.filter((task) => task.sprintId === sprint.id)
+  );
+
+  this.availableSprintTasks.set([]);
+});
+}
 
   private runSprintTaskAction(
     task: TaskAdminSummary,
@@ -586,4 +627,37 @@ export class SprintsComponent implements OnInit {
   private toDateInput(value: string): string {
     return new Date(value).toISOString().slice(0, 10);
   }
+
+  private toDeveloperSprintTask(task: TaskRecommendation): TaskAdminSummary {
+  const source = task as unknown as Partial<TaskAdminSummary> & {
+    taskId: string;
+  };
+
+  return {
+    id: source.taskId,
+    clientId: source.clientId ?? '',
+    clientName: source.clientName ?? '',
+    projectId: source.projectId ?? '',
+    projectName: source.projectName ?? '',
+    sprintId: source.sprintId ?? null,
+    sprintName: source.sprintName ?? '',
+    title: source.title ?? '',
+    description: source.description ?? '',
+    type: source.type ?? 'Story',
+    priority: source.priority ?? 'Medium',
+    status: source.status ?? 'Todo',
+    storyPoints: source.storyPoints ?? 0,
+    deadline: source.deadline ?? null,
+    assigneeId: source.assigneeId ?? '',
+    assigneeName: source.assigneeName ?? 'You'
+  } as TaskAdminSummary;
+}
+
+private toSprintTask(
+  task: TaskAdminSummary | TaskRecommendation
+): TaskAdminSummary {
+  return 'id' in task
+    ? task
+    : this.toDeveloperSprintTask(task);
+}
 }

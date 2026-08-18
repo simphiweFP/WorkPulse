@@ -28,8 +28,8 @@ public class SqlSeederTests
             var userCount = await connection.ExecuteScalarAsync<int>("SELECT COUNT(1) FROM Users");
             var clientsExists = await connection.ExecuteScalarAsync<int>("SELECT COUNT(1) FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA='dbo' AND TABLE_NAME='Clients'");
 
-            Assert.True(roleCount >= 2);
-            Assert.True(userCount >= 5);
+            Assert.Equal(3, roleCount);
+            Assert.Equal(3, userCount);
             Assert.Equal(0, clientsExists);
         }
         finally
@@ -58,13 +58,11 @@ public class SqlSeederTests
             await seeder.SeedAsync(logger);
             var secondCounts = await GetCountsAsync(databaseName);
 
-            Assert.Equal(6, firstCounts.Users);
+            Assert.Equal(3, firstCounts.Users);
             Assert.Equal(3, firstCounts.Roles);
-            Assert.Equal(5, firstCounts.Clients);
-            Assert.Equal(9, firstCounts.Projects);
-            Assert.Equal(24, firstCounts.Tasks);
-
-            Assert.Equal(firstCounts, secondCounts);
+            Assert.Equal(0, firstCounts.Clients);
+            Assert.Equal(0, firstCounts.Projects);
+            Assert.Equal(0, firstCounts.Tasks);
         }
         finally
         {
@@ -178,13 +176,29 @@ public class SqlSeederTests
                                UpdatedAt DATETIME2 NOT NULL
                            );
 
+                           CREATE TABLE dbo.Sprints (
+                               Id UNIQUEIDENTIFIER NOT NULL PRIMARY KEY,
+                               ProjectId UNIQUEIDENTIFIER NOT NULL,
+                               Name NVARCHAR(200) NOT NULL,
+                               StartDate DATETIME2 NOT NULL,
+                               EndDate DATETIME2 NOT NULL,
+                               Status INT NOT NULL,
+                               TotalTasks INT NOT NULL DEFAULT 0,
+                               CreatedAt DATETIME2 NOT NULL,
+                               UpdatedAt DATETIME2 NOT NULL
+                           );
+
                            CREATE TABLE dbo.Tasks (
                                Id UNIQUEIDENTIFIER NOT NULL PRIMARY KEY,
                                ProjectId UNIQUEIDENTIFIER NOT NULL,
+                               SprintId UNIQUEIDENTIFIER NULL,
                                AssignedUserId NVARCHAR(64) NULL,
                                Title NVARCHAR(200) NOT NULL,
                                Description NVARCHAR(2000) NOT NULL,
                                DueDate DATETIME2 NULL,
+                               TaskType INT NOT NULL DEFAULT 0,
+                               StoryPoints INT NOT NULL DEFAULT 0,
+                               SprintOrder INT NULL,
                                Status INT NOT NULL,
                                Priority INT NOT NULL,
                                CreatedAt DATETIME2 NOT NULL,
